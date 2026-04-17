@@ -13,6 +13,7 @@ Arsitektur Sistem
 ### Tahap 1: Kontainerisasi (Docker)
 
 1. Buat Dockerfile untuk aplikasi sederhana.
+
 1.1 Deskripsi Aplikasi
 
 Aplikasi yang digunakan adalah aplikasi sederhana berbasis Node.js dengan framework Express. Aplikasi ini dibuat sebagai contoh service yang nantinya akan dibangun menjadi Docker image.
@@ -23,5 +24,53 @@ Aplikasi memiliki dua endpoint utama:
 
 
 1.2 Kode Aplikasi
+```
+const express = require('express');
+const app = express();
 
-Pipeline (Jenkins) harus menjalankan build aplikasi dan membuat image Docker.
+const PORT = 3000;
+
+app.get('/', (req, res) => {
+  res.send('Hello from Docker App!');
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+app.listen(PORT, () => {
+  console.log(`App running on port ${PORT}`);
+});
+```
+
+Penjelasan kode
+- express() → membuat server web
+- app.get('/') → endpoint utama
+- app.get('/health') → endpoint untuk cek status aplikasi
+- app.listen(3000) → aplikasi berjalan di port 3000
+
+1.3 Struktur Project
+
+<img width="191" height="213" alt="image" src="https://github.com/user-attachments/assets/b6abece8-3df4-4bb4-b05b-ed10eb97fe4e" />
+
+
+<img width="681" height="193" alt="image" src="https://github.com/user-attachments/assets/eeb83336-b67f-44a9-905d-5ea909d57349" />
+
+
+<img width="588" height="226" alt="image" src="https://github.com/user-attachments/assets/360b225e-0d7b-40f0-9002-49f370679c99" />
+
+
+
+
+
+link jenkins : http://localhost:8080
+
+username jenkins : kelompok3
+password : miniproject5
+
+
+
+
+
+
+
