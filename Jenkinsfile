@@ -70,18 +70,25 @@ stage('Docker Scout Scan') {
 }
 
         stage('Security Gate') {
-            steps {
-                script {
-                    def scanOutput = readFile('scan-result.txt')
+    steps {
+        script {
+            def scanOutput = readFile('scan-result.txt')
 
-                    if (scanOutput =~ /CRITICAL/) {
-                        error("Build failed: Critical vulnerabilities detected in Docker image.")
-                    } else {
-                        echo "No High or Critical vulnerabilities detected."
-                    }
-                }
+            def criticalMatch = (scanOutput =~ /CRITICAL\s+(\d+)/)
+            def criticalCount = 0
+
+            if (criticalMatch.find()) {
+                criticalCount = criticalMatch.group(1).toInteger()
+            }
+
+            if (criticalCount > 0) {
+                error("Build failed: Critical vulnerabilities detected in Docker image.")
+            } else {
+                echo "No Critical vulnerabilities detected."
             }
         }
+    }
+}
 
         stage('Traceability Info') {
             steps {
