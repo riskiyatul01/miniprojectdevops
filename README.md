@@ -49,15 +49,7 @@ Penjelasan kode
 - app.get('/health') → endpoint untuk cek status aplikasi
 - app.listen(3000) → aplikasi berjalan di port 3000
 
-1.3 Struktur Project
 
-<img width="191" height="213" alt="image" src="https://github.com/user-attachments/assets/b6abece8-3df4-4bb4-b05b-ed10eb97fe4e" />
-
-
-<img width="681" height="193" alt="image" src="https://github.com/user-attachments/assets/eeb83336-b67f-44a9-905d-5ea909d57349" />
-
-
-<img width="588" height="226" alt="image" src="https://github.com/user-attachments/assets/360b225e-0d7b-40f0-9002-49f370679c99" />
 
 
 
