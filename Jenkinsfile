@@ -75,7 +75,7 @@ stage('Docker Scout Scan') {
                     def scanOutput = readFile('scan-result.txt')
 
                     if (scanOutput =~ /CRITICAL/) {
-                        error("Build failed: High or Critical vulnerabilities detected in Docker image.")
+                        error("Build failed: Critical vulnerabilities detected in Docker image.")
                     } else {
                         echo "No High or Critical vulnerabilities detected."
                     }
