@@ -56,7 +56,8 @@ stage('Docker Scout Scan') {
             passwordVariable: 'DOCKERHUB_PAT'
         )]) {
             sh '''
-                docker run --rm \
+               docker run --rm \
+                  -u root \
                   -v /var/run/docker.sock:/var/run/docker.sock \
                   -e DOCKER_SCOUT_HUB_USER="$DOCKERHUB_USER" \
                   -e DOCKER_SCOUT_HUB_PASSWORD="$DOCKERHUB_PAT" \
