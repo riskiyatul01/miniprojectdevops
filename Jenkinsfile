@@ -12,13 +12,13 @@ pipeline {
             steps {
                 checkout scm
                 script {
-                    SHORT_COMMIT = sh(
+                    env.SHORT_COMMIT = sh(
                         script: "git rev-parse --short HEAD",
                         returnStdout: true
                     ).trim()
                 }
                 echo "Repository checked out successfully"
-                echo "Commit ID: ${SHORT_COMMIT}"
+                echo "Commit ID: ${env.SHORT_COMMIT}"
             }
         }
 
@@ -36,7 +36,7 @@ pipeline {
                     docker build \
                       -t ${APP_NAME}:${APP_VERSION} \
                       -t ${APP_NAME}:latest \
-                      -t ${APP_NAME}:commit-${SHORT_COMMIT} .
+                      -t ${APP_NAME}:commit-${env.SHORT_COMMIT} .
                 """
                 echo "Docker image build completed"
             }
@@ -49,16 +49,17 @@ pipeline {
         }
 
         stage('Docker Scout Scan') {
-    steps {
-        sh '''
-        docker run --rm \
-          -v /var/run/docker.sock:/var/run/docker.sock \
-          docker/scout-cli cves simple-app:latest > scan-result.txt
+            steps {
+                sh '''
+                docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  docker/scout-cli cves simple-app:latest > scan-result.txt
 
-        cat scan-result.txt
-        '''
-    }
- }|
+                cat scan-result.txt
+                '''
+            }
+        }
+
         stage('Security Gate') {
             steps {
                 script {
@@ -80,11 +81,11 @@ pipeline {
 Application Name : ${APP_NAME}
 Application Version : ${APP_VERSION}
 Jenkins Build Number : ${env.BUILD_NUMBER}
-Git Commit : ${SHORT_COMMIT}
+Git Commit : ${env.SHORT_COMMIT}
 Docker Tags :
 - ${APP_NAME}:${APP_VERSION}
 - ${APP_NAME}:latest
-- ${APP_NAME}:commit-${SHORT_COMMIT}
+- ${APP_NAME}:commit-${env.SHORT_COMMIT}
 Build Time : ${new Date().toString()}
 """
                 }
