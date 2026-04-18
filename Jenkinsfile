@@ -75,52 +75,48 @@ stage('Docker Scout Scan') {
             def scanOutput = readFile('scan-result.txt')
 
             def criticalMatch = (scanOutput =~ /CRITICAL\s+(\d+)/)
+            def highMatch = (scanOutput =~ /HIGH\s+(\d+)/)
+
             def criticalCount = 0
+            def highCount = 0
 
             if (criticalMatch.find()) {
                 criticalCount = criticalMatch.group(1).toInteger()
             }
 
-            if (criticalCount > 0) {
-                error("Build failed: Critical vulnerabilities detected in Docker image.")
+            if (highMatch.find()) {
+                highCount = highMatch.group(1).toInteger()
+            }
+
+            if (criticalCount > 0 || highCount > 0) {
+                error("Build failed: High or Critical vulnerabilities detected in Docker image.")
             } else {
-                echo "No Critical vulnerabilities detected."
+                echo "No High or Critical vulnerabilities detected."
             }
         }
     }
 }
 
-        stage('Traceability Info') {
-            steps {
-                script {
-                    writeFile file: 'build-info.txt', text: """
+ post {
+    always {
+        script {
+            writeFile file: 'build-info.txt', text: """
 Application Name : ${APP_NAME}
 Application Version : ${APP_VERSION}
 Jenkins Build Number : ${env.BUILD_NUMBER}
 Git Commit : ${env.SHORT_COMMIT}
-Docker Tags :
-- ${APP_NAME}:${APP_VERSION}
-- ${APP_NAME}:latest
-- ${APP_NAME}:commit-${env.SHORT_COMMIT}
 Build Time : ${new Date().toString()}
 """
-                }
-                sh 'cat build-info.txt'
-            }
         }
+        sh 'cat build-info.txt'
+        archiveArtifacts artifacts: 'build-info.txt, scan-result.txt', fingerprint: true
     }
 
-    post {
-        success {
-            echo "Pipeline completed successfully"
-            archiveArtifacts artifacts: 'build-info.txt, scan-result.txt', fingerprint: true
-        }
-        failure {
-            echo "Pipeline failed"
-            archiveArtifacts artifacts: 'build-info.txt, scan-result.txt', fingerprint: true, allowEmptyArchive: true
-        }
-        always {
-            echo "Pipeline finished"
-        }
+    success {
+        echo "Pipeline completed successfully"
+    }
+
+    failure {
+        echo "Pipeline failed"
     }
 }
