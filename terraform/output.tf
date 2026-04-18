@@ -22,3 +22,13 @@ output "target_public_ip" {
   value       = azurerm_public_ip.target_pip.ip_address
   description = "IP Publik App"
 }
+
+output "jenkins_pip_id" {
+  value       = azurerm_public_ip.jenkins_pip.id
+  description = "ID IP Publik Jenkins"
+}
+
+output "target_pip_id" {
+  value       = azurerm_public_ip.target_pip.id
+  description = "ID IP Publik App"
+}
