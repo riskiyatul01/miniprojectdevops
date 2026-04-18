@@ -49,14 +49,16 @@ pipeline {
         }
 
         stage('Docker Scout Scan') {
-            steps {
-                sh """
-                    docker scout cves ${APP_NAME}:${APP_VERSION} > scan-result.txt
-                    cat scan-result.txt
-                """
-            }
-        }
+    steps {
+        sh '''
+        docker run --rm \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          docker/scout-cli cves simple-app:latest > scan-result.txt
 
+        cat scan-result.txt
+        '''
+    }
+ }|
         stage('Security Gate') {
             steps {
                 script {
