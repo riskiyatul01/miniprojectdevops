@@ -74,22 +74,19 @@ pipeline {
         script {
             def scanOutput = readFile('scan-result.txt')
 
-            echo "===== SCAN RESULT START ====="
-            echo scanOutput
-            echo "===== SCAN RESULT END ====="
+            int criticalCount = 0
+            int highCount = 0
 
-            def criticalMatch = (scanOutput =~ /CRITICAL\\s+(\\d+)/)
-            def highMatch = (scanOutput =~ /HIGH\\s+(\\d+)/)
+            scanOutput.eachLine { line ->
+                def cleanLine = line.trim()
 
-            def criticalCount = 0
-            def highCount = 0
+                if (cleanLine ==~ /CRITICAL\s+\d+/) {
+                    criticalCount = cleanLine.tokenize().last().toInteger()
+                }
 
-            if (criticalMatch.find()) {
-                criticalCount = criticalMatch.group(1).toInteger()
-            }
-
-            if (highMatch.find()) {
-                highCount = highMatch.group(1).toInteger()
+                if (cleanLine ==~ /HIGH\s+\d+/) {
+                    highCount = cleanLine.tokenize().last().toInteger()
+                }
             }
 
             echo "Critical vulnerabilities: ${criticalCount}"
