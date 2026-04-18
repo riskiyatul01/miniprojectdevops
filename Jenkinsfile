@@ -55,9 +55,9 @@ stage('Docker Hub Login') {
             usernameVariable: 'DOCKERHUB_USER',
             passwordVariable: 'DOCKERHUB_PAT'
         )]) {
-            sh '''
-                echo "$DOCKERHUB_PAT" | docker login -u "$DOCKERHUB_USER" --password-stdin
-            '''
+            sh """
+                echo \$DOCKERHUB_PAT | docker login -u \$DOCKERHUB_USER --password-stdin
+            """
         }
     }
 }
