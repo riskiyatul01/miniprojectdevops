@@ -48,75 +48,85 @@ pipeline {
             }
         }
 
-stage('Docker Scout Scan') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-creds',
-            usernameVariable: 'DOCKERHUB_USER',
-            passwordVariable: 'DOCKERHUB_PAT'
-        )]) {
-            sh '''
-               docker run --rm \
-                  -u root \
-                  -v /var/run/docker.sock:/var/run/docker.sock \
-                  -e DOCKER_SCOUT_HUB_USER="$DOCKERHUB_USER" \
-                  -e DOCKER_SCOUT_HUB_PASSWORD="$DOCKERHUB_PAT" \
-                  docker/scout-cli cves simple-app:latest > scan-result.txt
+        stage('Docker Scout Scan') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_PAT'
+                )]) {
+                    sh '''
+                        docker run --rm \
+                          -u root \
+                          -v /var/run/docker.sock:/var/run/docker.sock \
+                          -e DOCKER_SCOUT_HUB_USER="$DOCKERHUB_USER" \
+                          -e DOCKER_SCOUT_HUB_PASSWORD="$DOCKERHUB_PAT" \
+                          docker/scout-cli cves simple-app:latest > scan-result.txt
 
-                cat scan-result.txt
-            '''
+                        cat scan-result.txt
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Security Gate') {
-    steps {
-        script {
-            def scanOutput = readFile('scan-result.txt')
+            steps {
+                script {
+                    def scanOutput = readFile('scan-result.txt')
 
-            def criticalMatch = (scanOutput =~ /CRITICAL\s+(\d+)/)
-            def highMatch = (scanOutput =~ /HIGH\s+(\d+)/)
+                    def criticalMatch = (scanOutput =~ /CRITICAL\\s+(\\d+)/)
+                    def highMatch = (scanOutput =~ /HIGH\\s+(\\d+)/)
 
-            def criticalCount = 0
-            def highCount = 0
+                    def criticalCount = 0
+                    def highCount = 0
 
-            if (criticalMatch.find()) {
-                criticalCount = criticalMatch.group(1).toInteger()
-            }
+                    if (criticalMatch.find()) {
+                        criticalCount = criticalMatch.group(1).toInteger()
+                    }
 
-            if (highMatch.find()) {
-                highCount = highMatch.group(1).toInteger()
-            }
+                    if (highMatch.find()) {
+                        highCount = highMatch.group(1).toInteger()
+                    }
 
-            if (criticalCount > 0 || highCount > 0) {
-                error("Build failed: High or Critical vulnerabilities detected in Docker image.")
-            } else {
-                echo "No High or Critical vulnerabilities detected."
+                    echo "Critical vulnerabilities: ${criticalCount}"
+                    echo "High vulnerabilities: ${highCount}"
+
+                    if (criticalCount > 0 || highCount > 0) {
+                        error("Build failed: High or Critical vulnerabilities detected in Docker image.")
+                    } else {
+                        echo "No High or Critical vulnerabilities detected."
+                    }
+                }
             }
         }
     }
-}
 
- post {
-    always {
-        script {
-            writeFile file: 'build-info.txt', text: """
+    post {
+        always {
+            script {
+                writeFile file: 'build-info.txt', text: """
 Application Name : ${APP_NAME}
 Application Version : ${APP_VERSION}
 Jenkins Build Number : ${env.BUILD_NUMBER}
 Git Commit : ${env.SHORT_COMMIT}
+Docker Tags :
+- ${APP_NAME}:${APP_VERSION}
+- ${APP_NAME}:latest
+- ${APP_NAME}:commit-${env.SHORT_COMMIT}
 Build Time : ${new Date().toString()}
 """
+            }
+            sh 'cat build-info.txt'
+            archiveArtifacts artifacts: 'build-info.txt, scan-result.txt', fingerprint: true, allowEmptyArchive: true
+            echo "Pipeline finished"
         }
-        sh 'cat build-info.txt'
-        archiveArtifacts artifacts: 'build-info.txt, scan-result.txt', fingerprint: true
-    }
 
-    success {
-        echo "Pipeline completed successfully"
-    }
+        success {
+            echo "Pipeline completed successfully"
+        }
 
-    failure {
-        echo "Pipeline failed"
+        failure {
+            echo "Pipeline failed"
+        }
     }
 }
