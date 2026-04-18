@@ -48,29 +48,24 @@ pipeline {
             }
         }
 
-stage('Docker Hub Login') {
+stage('Docker Scout Scan') {
     steps {
         withCredentials([usernamePassword(
             credentialsId: 'dockerhub-creds',
             usernameVariable: 'DOCKERHUB_USER',
             passwordVariable: 'DOCKERHUB_PAT'
         )]) {
-            sh """
-                echo \$DOCKERHUB_PAT | docker login -u \$DOCKERHUB_USER --password-stdin
-            """
-        }
-    }
-}
-    stage('Docker Scout Scan') {
-    steps {
-        sh '''
-            docker run --rm \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v $HOME/.docker:/root/.docker \
-              docker/scout-cli cves simple-app:latest > scan-result.txt
+            sh '''
+                echo "$DOCKERHUB_PAT" | docker login -u "$DOCKERHUB_USER" --password-stdin
 
-            cat scan-result.txt
-        '''
+                docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  -v $HOME/.docker:/root/.docker \
+                  docker/scout-cli cves simple-app:latest > scan-result.txt
+
+                cat scan-result.txt
+            '''
+        }
     }
 }
 
