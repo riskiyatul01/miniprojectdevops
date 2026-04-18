@@ -70,36 +70,39 @@ pipeline {
         }
 
         stage('Security Gate') {
-            steps {
-                script {
-                    def scanOutput = readFile('scan-result.txt')
+    steps {
+        script {
+            def scanOutput = readFile('scan-result.txt')
 
-                    def criticalMatch = (scanOutput =~ /CRITICAL\\s+(\\d+)/)
-                    def highMatch = (scanOutput =~ /HIGH\\s+(\\d+)/)
+            echo "===== SCAN RESULT START ====="
+            echo scanOutput
+            echo "===== SCAN RESULT END ====="
 
-                    def criticalCount = 0
-                    def highCount = 0
+            def criticalMatch = (scanOutput =~ /CRITICAL\\s+(\\d+)/)
+            def highMatch = (scanOutput =~ /HIGH\\s+(\\d+)/)
 
-                    if (criticalMatch.find()) {
-                        criticalCount = criticalMatch.group(1).toInteger()
-                    }
+            def criticalCount = 0
+            def highCount = 0
 
-                    if (highMatch.find()) {
-                        highCount = highMatch.group(1).toInteger()
-                    }
+            if (criticalMatch.find()) {
+                criticalCount = criticalMatch.group(1).toInteger()
+            }
 
-                    echo "Critical vulnerabilities: ${criticalCount}"
-                    echo "High vulnerabilities: ${highCount}"
+            if (highMatch.find()) {
+                highCount = highMatch.group(1).toInteger()
+            }
 
-                    if (criticalCount > 0 || highCount > 0) {
-                        error("Build failed: High or Critical vulnerabilities detected in Docker image.")
-                    } else {
-                        echo "No High or Critical vulnerabilities detected."
-                    }
-                }
+            echo "Critical vulnerabilities: ${criticalCount}"
+            echo "High vulnerabilities: ${highCount}"
+
+            if (criticalCount > 0 || highCount > 0) {
+                error("Build failed: High or Critical vulnerabilities detected in Docker image.")
+            } else {
+                echo "No High or Critical vulnerabilities detected."
             }
         }
     }
+}
 
     post {
         always {
