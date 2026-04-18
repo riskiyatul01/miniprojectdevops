@@ -59,7 +59,9 @@ stage('Docker Scout Scan') {
                 echo "$DOCKERHUB_PAT" | docker login -u "$DOCKERHUB_USER" --password-stdin
 
                 docker run --rm \
-                  -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/.docker:/root/.docker docker/scout-cli cves simple-app:latest > scan-result.txt
+                  -v /var/run/docker.sock:/var/run/docker.sock 
+                  -v $HOME/.docker:/root/.docker 
+                  docker/scout-cli cves simple-app:latest > scan-result.txt
 
                 cat scan-result.txt
             '''
