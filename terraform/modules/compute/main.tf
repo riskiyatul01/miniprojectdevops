@@ -18,7 +18,8 @@ resource "azurerm_linux_virtual_machine" "jenkins_vm" {
   name                  = "jenkins-node"
   resource_group_name   = var.resource_group_name
   location              = var.location
-  size                  = "Standard_B2s"
+#  size                  = "Standard_B2s"
+  size                  = "Standard_B2as_v2"
   admin_username        = var.admin_username
   network_interface_ids = [azurerm_network_interface.jenkins_nic.id]
 
@@ -60,7 +61,7 @@ resource "azurerm_linux_virtual_machine" "target_vm" {
   name                  = "target-node"
   resource_group_name   = var.resource_group_name
   location              = var.location
-  size                  = "Standard_B1s"
+  size                  = "Standard_B2as_v2"
   admin_username        = var.admin_username
   network_interface_ids = [azurerm_network_interface.target_nic.id]
 

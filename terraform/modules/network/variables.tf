@@ -11,7 +11,7 @@ variable "location" {
 
 variable "app_port" {
   type        = string
-  default     = "80"
+  default     = "3000"
 }
 
 variable "allowed_jenkins" {
