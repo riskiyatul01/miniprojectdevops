@@ -1,0 +1,145 @@
+---
+# =====================================================
+# Jenkins Configuration as Code (JCasC)
+# Template ini di-render oleh Ansible dan di-mount ke
+# Jenkins container sebagai konfigurasi otomatis.
+#
+# Referensi: https://www.jenkins.io/projects/jcasc/
+# =====================================================
+
+jenkins:
+  systemMessage: |
+    ============================================================
+    Jenkins CI/CD - Miniproject DevOps Kelompok 3
+    Configured automatically by Ansible + JCasC
+    ============================================================
+
+  # Jumlah executor untuk concurrent builds
+  numExecutors: {{ jenkins_num_executors }}
+
+  # Mode: hanya menjalankan job yang di-assign ke master
+  mode: NORMAL
+
+  # CSRF Protection — mencegah Cross-Site Request Forgery
+  crumbIssuer:
+    standard:
+      excludeClientIPFromCrumb: false
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "{{ jenkins_admin_user }}"
+          password: "{{ jenkins_admin_password }}"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  remotingSecurity:
+    enabled: true
+
+  # Markup Formatter — Safe HTML rendering
+  markupFormatter:
+    rawHtml:
+      disableSyntaxHighlighting: false
+
+unclassified:
+  location:
+    url: "{{ jenkins_url }}"
+    adminAddress: "admin@miniproject-devops.local"
+
+  # Konfigurasi Email Notification (SMTP)
+  mailer:
+    smtpHost: "smtp.gmail.com"
+    smtpPort: "587"
+    useSsl: false
+    useTls: true
+    charset: "UTF-8"
+
+# =====================================================
+# Tool Configuration
+# Install tools secara otomatis agar pipeline bisa jalan
+# tanpa konfigurasi manual di Jenkins UI
+# =====================================================
+tool:
+  git:
+    installations:
+      - name: "Default"
+        home: "git"
+
+  nodejs:
+    installations:
+      - name: "NodeJS-20"
+        properties:
+          - installSource:
+              installers:
+                - nodeJSInstaller:
+                    id: "20.11.1"
+                    npmPackagesRefreshHours: 72
+
+# =====================================================
+# Credentials — Managed via JCasC
+# =====================================================
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          # Docker Hub Credentials
+          - usernamePassword:
+              scope: GLOBAL
+              id: "{{ dockerhub_creds_id }}"
+              username: "{{ dockerhub_username }}"
+              password: "{{ dockerhub_password }}"
+              description: "Docker Hub credentials for push/pull images"
+
+          # SSH Credentials untuk Target Node Deployment
+          - basicSSHUserPrivateKey:
+              scope: GLOBAL
+              id: "target-node-ssh"
+              username: "ubuntu"
+              description: "SSH key untuk deploy ke Target Node"
+              privateKeySource:
+                directEntry:
+                  privateKey: "${TARGET_SSH_KEY}"
+
+# =====================================================
+# Job DSL — Pipeline Job Definition
+# Mendefinisikan CI/CD pipeline secara otomatis
+# =====================================================
+jobs:
+  - script: |
+      pipelineJob('{{ jenkins_job_name }}') {
+          description('CI/CD Pipeline - Miniproject DevOps Kelompok 3')
+
+          definition {
+              cpsScm {
+                  scm {
+                      git {
+                          remote {
+                              url('{{ github_repo_url }}')
+                          }
+                          branches('{{ jenkins_job_branch }}')
+                      }
+                  }
+                  scriptPath('Jenkinsfile')
+                  lightweight(true)
+              }
+          }
+
+          // Trigger: Poll SCM setiap 5 menit
+          triggers {
+              scm('H/5 * * * *')
+          }
+
+          properties {
+              buildDiscarder {
+                  strategy {
+                      logRotator {
+                          numToKeepStr('10')
+                          daysToKeepStr('30')
+                      }
+                  }
+              }
+          }
+      }

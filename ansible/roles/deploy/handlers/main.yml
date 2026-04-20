@@ -1,0 +1,12 @@
+---
+# ============================================
+# Handlers untuk Role: deploy
+# ============================================
+
+- name: Cleanup dangling Docker images
+  ansible.builtin.command: docker image prune -f
+  changed_when: false
+
+- name: Cleanup unused Docker volumes
+  ansible.builtin.command: docker volume prune -f
+  changed_when: false

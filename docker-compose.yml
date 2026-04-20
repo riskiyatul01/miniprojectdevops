@@ -1,0 +1,28 @@
+---
+# =====================================================
+# Docker Compose — Target Deployment (Root reference)
+# File ini sebagai referensi/fallback untuk deploy manual.
+# Template Ansible ada di: ansible/roles/deploy/templates/
+# =====================================================
+
+services:
+  simple-app:
+    image: kelompok3devops/simple-app:latest
+    container_name: simple-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

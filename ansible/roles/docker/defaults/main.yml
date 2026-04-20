@@ -1,0 +1,23 @@
+---
+# ============================================
+# Role: docker — Default Variables
+# Override di group_vars atau host_vars
+# ============================================
+
+# Edisi Docker (ce = Community Edition)
+docker_edition: "ce"
+
+# Versi Docker Compose plugin
+docker_compose_version: "v2"
+
+# Paket Docker yang akan diinstall
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# User yang ditambahkan ke grup docker
+docker_users:
+  - "{{ ansible_user }}"

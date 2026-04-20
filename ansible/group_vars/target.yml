@@ -1,0 +1,16 @@
+---
+# ============================================
+# Variabel Khusus Target Deployment Node
+# ============================================
+
+# Direktori deployment di target VM
+deploy_dir: "/opt/app-deployment"
+
+# Port mapping (host:container)
+app_host_port: 3000
+app_container_port: 3000
+
+# Health check
+healthcheck_url: "http://localhost:{{ app_host_port }}/health"
+healthcheck_retries: 5
+healthcheck_delay: 10

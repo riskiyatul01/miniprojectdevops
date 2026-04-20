@@ -1,4 +1,17 @@
-**/.terraform/*
+# Node.js
+node_modules/
 
+# Terraform
+**/.terraform/*
 *.tfstate
 *.tfstate.*
+*.tfplan
+crash.log
+
+# Ansible
+ansible/*.retry
+ansible/group_vars/vault.yml
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,30 @@
+---
+# ============================================
+# Role: jenkins — Default Variables
+# Override di group_vars/jenkins.yml
+# ============================================
+
+# Jenkins Container
+jenkins_container_name: "jenkins"
+jenkins_image: "jenkins/jenkins:lts"
+jenkins_http_port: 8080
+jenkins_agent_port: 50000
+jenkins_home: "/opt/jenkins_home"
+jenkins_casc_dir: "/opt/jenkins_casc"
+
+# Jenkins Admin (override di group_vars atau vault)
+jenkins_admin_user: "admin"
+jenkins_admin_password: "changeme"
+
+# Jenkins URL
+jenkins_url: "http://localhost:{{ jenkins_http_port }}"
+
+# Number of executors
+jenkins_num_executors: 2
+
+# Docker Hub Credentials ID (referensi di Jenkinsfile)
+dockerhub_creds_id: "dockerhub-creds"
+
+# Pipeline Job defaults
+jenkins_job_name: "miniproject-devops"
+jenkins_job_branch: "*/main"

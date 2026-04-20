@@ -1,0 +1,185 @@
+---
+# ============================================
+# Role: jenkins — Setup Jenkins Container + JCasC
+# ============================================
+
+# --- Persiapan Direktori ---
+- name: Buat direktori jenkins_home
+  ansible.builtin.file:
+    path: "{{ jenkins_home }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+
+- name: Buat direktori JCasC
+  ansible.builtin.file:
+    path: "{{ jenkins_casc_dir }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+
+- name: Buat direktori Ansible config di jenkins_home
+  ansible.builtin.file:
+    path: "{{ jenkins_home }}/ansible"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+    recurse: yes
+
+# --- Copy Konfigurasi ---
+- name: Template JCasC configuration
+  ansible.builtin.template:
+    src: jenkins-casc.yml.j2
+    dest: "{{ jenkins_casc_dir }}/jenkins-casc.yml"
+    owner: "1000"
+    group: "1000"
+    mode: "0644"
+
+- name: Copy plugins.txt ke server
+  ansible.builtin.copy:
+    src: plugins.txt
+    dest: "{{ jenkins_home }}/plugins.txt"
+    owner: "1000"
+    group: "1000"
+    mode: "0644"
+
+# --- Copy Ansible files ke jenkins_home (untuk deploy dari pipeline) ---
+- name: Copy ansible.cfg ke jenkins_home
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/ansible.cfg"
+    dest: "{{ jenkins_home }}/ansible/ansible.cfg"
+    owner: "1000"
+    group: "1000"
+    mode: "0644"
+
+- name: Copy inventory ke jenkins_home
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/inventory/"
+    dest: "{{ jenkins_home }}/ansible/inventory/"
+    owner: "1000"
+    group: "1000"
+    mode: "0644"
+    directory_mode: "0755"
+
+- name: Copy group_vars ke jenkins_home
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/group_vars/"
+    dest: "{{ jenkins_home }}/ansible/group_vars/"
+    owner: "1000"
+    group: "1000"
+    mode: "0644"
+    directory_mode: "0755"
+
+- name: Copy roles ke jenkins_home
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/roles/"
+    dest: "{{ jenkins_home }}/ansible/roles/"
+    owner: "1000"
+    group: "1000"
+    mode: "0644"
+    directory_mode: "0755"
+
+- name: Copy playbook-deploy.yml ke jenkins_home
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/playbook-deploy.yml"
+    dest: "{{ jenkins_home }}/ansible/playbook-deploy.yml"
+    owner: "1000"
+    group: "1000"
+    mode: "0644"
+
+# --- Jalankan Jenkins Container ---
+- name: Hentikan Jenkins container lama (jika ada)
+  ansible.builtin.command: docker rm -f {{ jenkins_container_name }}
+  ignore_errors: yes
+  changed_when: false
+
+- name: Jalankan Jenkins container
+  ansible.builtin.command: >
+    docker run -d
+    --name {{ jenkins_container_name }}
+    --restart unless-stopped
+    -p {{ jenkins_http_port }}:8080
+    -p {{ jenkins_agent_port }}:50000
+    -v {{ jenkins_home }}:/var/jenkins_home
+    -v /var/run/docker.sock:/var/run/docker.sock
+    -v {{ jenkins_casc_dir }}:/var/jenkins_casc:ro
+    -e CASC_JENKINS_CONFIG=/var/jenkins_casc/jenkins-casc.yml
+    -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+    {{ jenkins_image }}
+  register: jenkins_container
+
+- name: Tampilkan Jenkins container ID
+  ansible.builtin.debug:
+    msg: "Jenkins container started: {{ jenkins_container.stdout }}"
+
+# --- Tunggu Jenkins Siap ---
+- name: Tunggu Jenkins siap (max 120 detik)
+  ansible.builtin.uri:
+    url: "http://localhost:{{ jenkins_http_port }}/login"
+    status_code: 200
+    timeout: 10
+  register: jenkins_ready
+  until: jenkins_ready.status == 200
+  retries: 24
+  delay: 5
+
+# --- Install Docker CLI di dalam Jenkins Container ---
+- name: Install Docker CLI di Jenkins container
+  ansible.builtin.command: >
+    docker exec -u root {{ jenkins_container_name }}
+    bash -c "apt-get update && apt-get install -y docker.io"
+  register: docker_cli_install
+  changed_when: "'is already the newest version' not in docker_cli_install.stdout"
+
+# --- Install Ansible di dalam Jenkins Container ---
+- name: Install Ansible di Jenkins container
+  ansible.builtin.command: >
+    docker exec -u root {{ jenkins_container_name }}
+    bash -c "apt-get install -y ansible sshpass"
+  register: ansible_install
+  changed_when: "'is already the newest version' not in ansible_install.stdout"
+
+- name: Verifikasi Ansible di Jenkins container
+  ansible.builtin.command: >
+    docker exec {{ jenkins_container_name }}
+    ansible --version
+  register: ansible_version_output
+  changed_when: false
+
+- name: Tampilkan versi Ansible di Jenkins
+  ansible.builtin.debug:
+    msg: "Ansible terinstall di Jenkins: {{ ansible_version_output.stdout_lines[0] }}"
+
+# --- Install Plugins ---
+- name: Install Jenkins plugins dari plugins.txt
+  ansible.builtin.command: >
+    docker exec {{ jenkins_container_name }}
+    jenkins-plugin-cli --plugin-file /var/jenkins_home/plugins.txt
+  register: plugin_install
+  changed_when: "'Done' in plugin_install.stdout"
+  ignore_errors: yes
+
+- name: Restart Jenkins container setelah install plugins
+  ansible.builtin.command: docker restart {{ jenkins_container_name }}
+
+- name: Tunggu Jenkins kembali siap setelah restart
+  ansible.builtin.uri:
+    url: "http://localhost:{{ jenkins_http_port }}/login"
+    status_code: 200
+    timeout: 10
+  register: jenkins_restarted
+  until: jenkins_restarted.status == 200
+  retries: 24
+  delay: 5
+
+- name: Tampilkan status Jenkins
+  ansible.builtin.debug:
+    msg: |
+      ✅ Jenkins siap diakses di {{ jenkins_url }}
+      - JCasC: Loaded
+      - Plugins: Installed
+      - Ansible: Available (untuk deploy via pipeline)
+      - Docker CLI: Available

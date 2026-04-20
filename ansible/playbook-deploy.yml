@@ -1,0 +1,18 @@
+---
+# =====================================================
+# Playbook: Deploy Aplikasi ke Target Node
+# Dipanggil oleh Jenkins pipeline setelah build berhasil.
+#
+# Penggunaan:
+#   ansible-playbook playbook-deploy.yml \
+#     -e "image_tag=build-42" \
+#     -e "dockerhub_password=xxxx"
+# =====================================================
+
+- name: Deploy aplikasi ke Target Node
+  hosts: target
+  become: yes
+  vars:
+    image_tag: "latest"
+  roles:
+    - deploy

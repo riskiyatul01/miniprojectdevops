@@ -1,0 +1,23 @@
+---
+# ============================================
+# Variabel Global — Berlaku untuk Semua Node
+# ============================================
+
+# Docker
+docker_edition: "ce"
+docker_compose_version: "v2"
+
+# Aplikasi
+app_name: "simple-app"
+app_version: "1.0.0"
+app_port: 3000
+
+# Docker Hub
+dockerhub_username: "kelompok3devops"
+dockerhub_image: "{{ dockerhub_username }}/{{ app_name }}"
+
+# GitHub Repository
+github_repo_url: "https://github.com/kelompok3devops/miniprojectdevops.git"
+
+# Timezone
+timezone: "Asia/Jakarta"

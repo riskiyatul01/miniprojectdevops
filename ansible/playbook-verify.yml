@@ -1,0 +1,148 @@
+---
+# =====================================================
+# Playbook: Verifikasi Status Semua Node
+# Dijalankan untuk memastikan semua konfigurasi berhasil.
+#
+# Penggunaan:
+#   ansible-playbook playbook-verify.yml
+# =====================================================
+
+# --- Play 1: Verifikasi Semua Node ---
+- name: Verifikasi konfigurasi semua node
+  hosts: all
+  become: yes
+  tasks:
+    - name: Cek koneksi SSH
+      ansible.builtin.ping:
+
+    - name: Cek versi OS
+      ansible.builtin.command: lsb_release -a
+      register: os_info
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Cek Docker terinstall
+      ansible.builtin.command: docker --version
+      register: docker_ver
+      changed_when: false
+
+    - name: Cek Docker Compose terinstall
+      ansible.builtin.command: docker compose version
+      register: compose_ver
+      changed_when: false
+
+    - name: Cek Docker service berjalan
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+      check_mode: yes
+      register: docker_service
+
+    - name: Cek user terdaftar di grup docker
+      ansible.builtin.command: groups {{ ansible_user }}
+      register: user_groups
+      changed_when: false
+
+    - name: Tampilkan status node
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          Node: {{ inventory_hostname }}
+          IP: {{ ansible_host }}
+          ========================================
+          OS       : {{ os_info.stdout_lines[0] | default('N/A') }}
+          Docker   : {{ docker_ver.stdout }}
+          Compose  : {{ compose_ver.stdout }}
+          Service  : {{ 'Running' if docker_service is not changed else 'NOT Running' }}
+          Groups   : {{ user_groups.stdout }}
+          ========================================
+
+# --- Play 2: Verifikasi Jenkins Node ---
+- name: Verifikasi Jenkins Node
+  hosts: jenkins
+  become: yes
+  tasks:
+    - name: Cek Jenkins container berjalan
+      ansible.builtin.command: docker ps --filter "name={{ jenkins_container_name }}" --format "{% raw %}{{.Status}}{% endraw %}"
+      register: jenkins_status
+      changed_when: false
+
+    - name: Cek Jenkins HTTP response
+      ansible.builtin.uri:
+        url: "http://localhost:{{ jenkins_http_port }}/login"
+        status_code: 200
+        timeout: 10
+      register: jenkins_http
+      ignore_errors: yes
+
+    - name: Cek JCasC file ada
+      ansible.builtin.stat:
+        path: "{{ jenkins_casc_dir }}/jenkins-casc.yml"
+      register: casc_file
+
+    - name: Cek Ansible tersedia di Jenkins container
+      ansible.builtin.command: docker exec {{ jenkins_container_name }} ansible --version
+      register: jenkins_ansible
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Cek Ansible inventory tersedia di Jenkins container
+      ansible.builtin.command: docker exec {{ jenkins_container_name }} ls -la /var/jenkins_home/ansible/
+      register: jenkins_ansible_files
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Tampilkan status Jenkins
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          Jenkins Verification
+          ========================================
+          Container : {{ jenkins_status.stdout | default('NOT FOUND') }}
+          HTTP      : {{ 'OK (200)' if jenkins_http.status is defined and jenkins_http.status == 200 else 'FAILED' }}
+          JCasC     : {{ 'EXISTS' if casc_file.stat.exists else 'MISSING' }}
+          Ansible   : {{ jenkins_ansible.stdout_lines[0] | default('NOT INSTALLED') }}
+          URL       : {{ jenkins_url }}
+          ========================================
+
+# --- Play 3: Verifikasi Target Node ---
+- name: Verifikasi Target Deployment Node
+  hosts: target
+  become: yes
+  tasks:
+    - name: Cek direktori deployment ada
+      ansible.builtin.stat:
+        path: "{{ deploy_dir }}"
+      register: deploy_directory
+
+    - name: Cek docker-compose.yml ada
+      ansible.builtin.stat:
+        path: "{{ deploy_dir }}/docker-compose.yml"
+      register: compose_file
+
+    - name: Cek container aplikasi berjalan
+      ansible.builtin.command: docker ps --filter "name={{ app_name }}" --format "{% raw %}{{.Status}}{% endraw %}"
+      register: app_status
+      changed_when: false
+      ignore_errors: yes
+
+    - name: Cek health endpoint aplikasi
+      ansible.builtin.uri:
+        url: "{{ healthcheck_url }}"
+        status_code: 200
+        timeout: 5
+      register: app_health
+      ignore_errors: yes
+
+    - name: Tampilkan status Target Node
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          Target Node Verification
+          ========================================
+          Deploy Dir     : {{ 'EXISTS' if deploy_directory.stat.exists else 'MISSING' }}
+          Compose File   : {{ 'EXISTS' if compose_file.stat.exists else 'MISSING' }}
+          App Container  : {{ app_status.stdout | default('NOT RUNNING') }}
+          Health Check   : {{ 'OK (200)' if app_health.status is defined and app_health.status == 200 else 'FAILED / NOT DEPLOYED' }}
+          App URL        : http://{{ ansible_host }}:{{ app_host_port }}
+          ========================================

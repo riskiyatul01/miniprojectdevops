@@ -1,0 +1,21 @@
+---
+# ============================================
+# Role: common — Default Variables
+# Override di group_vars atau host_vars
+# ============================================
+
+# Timezone server
+timezone: "Asia/Jakarta"
+
+# Paket dasar yang akan diinstall di semua node
+common_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - wget
+  - gnupg
+  - lsb-release
+  - software-properties-common
+  - python3-pip
+  - unzip
+  - jq

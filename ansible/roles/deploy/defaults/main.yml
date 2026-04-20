@@ -1,0 +1,23 @@
+---
+# ============================================
+# Role: deploy — Default Variables
+# Override di group_vars/target.yml
+# ============================================
+
+# Direktori deployment di target VM
+deploy_dir: "/opt/app-deployment"
+
+# Port mapping
+app_host_port: 3000
+app_container_port: 3000
+
+# Image tag (override via extra-vars dari Jenkins)
+image_tag: "latest"
+
+# Health check
+healthcheck_url: "http://localhost:{{ app_host_port }}/health"
+healthcheck_retries: 5
+healthcheck_delay: 10
+
+# Docker image cleanup
+docker_prune_after_deploy: true

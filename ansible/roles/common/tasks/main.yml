@@ -1,0 +1,33 @@
+---
+# ============================================
+# Role: common — Paket Dasar & Konfigurasi OS
+# ============================================
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install paket dasar yang dibutuhkan
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - wget
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - python3-pip
+      - unzip
+      - jq
+    state: present
+
+- name: Set timezone ke {{ timezone }}
+  ansible.builtin.timezone:
+    name: "{{ timezone }}"
+
+- name: Pastikan UFW firewall tidak memblokir (disabled untuk lab)
+  ansible.builtin.ufw:
+    state: disabled
+  ignore_errors: yes

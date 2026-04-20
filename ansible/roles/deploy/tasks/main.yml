@@ -1,0 +1,125 @@
+---
+# ============================================
+# Role: deploy — Deployment Aplikasi ke Target Node
+# Menggunakan Docker Compose untuk orchestration
+# ============================================
+
+# --- Persiapan ---
+- name: Buat direktori deployment
+  ansible.builtin.file:
+    path: "{{ deploy_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Template docker-compose.yml ke target node
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ deploy_dir }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: "0644"
+
+# --- Simpan versi sebelumnya untuk rollback ---
+- name: Cek container yang sedang berjalan (untuk rollback)
+  ansible.builtin.shell: |
+    docker inspect --format='{% raw %}{{ .Config.Image }}{% endraw %}' {{ app_name }} 2>/dev/null || echo "none"
+  register: current_running_image
+  changed_when: false
+  ignore_errors: yes
+
+- name: Simpan image saat ini sebagai rollback target
+  ansible.builtin.copy:
+    content: "{{ current_running_image.stdout }}"
+    dest: "{{ deploy_dir }}/.previous_image"
+    mode: "0644"
+  when: current_running_image.stdout != "none"
+
+# --- Pull & Deploy ---
+- name: Login ke Docker Hub
+  ansible.builtin.command: >
+    docker login -u {{ dockerhub_username }} -p {{ dockerhub_password }}
+  no_log: true
+  changed_when: false
+
+- name: Pull image terbaru dari registry
+  ansible.builtin.command: >
+    docker pull {{ dockerhub_image }}:{{ image_tag | default('latest') }}
+  register: pull_result
+
+- name: Tampilkan hasil pull
+  ansible.builtin.debug:
+    msg: "{{ pull_result.stdout }}"
+
+- name: Deploy aplikasi menggunakan Docker Compose
+  ansible.builtin.shell: |
+    cd {{ deploy_dir }}
+    export IMAGE_TAG={{ image_tag | default('latest') }}
+    docker compose down --remove-orphans || true
+    docker compose up -d
+  environment:
+    IMAGE_TAG: "{{ image_tag | default('latest') }}"
+  notify: Cleanup dangling Docker images
+
+# --- Smoke Test Pasca-Deployment ---
+- name: Tunggu aplikasi siap (smoke test)
+  ansible.builtin.uri:
+    url: "{{ healthcheck_url }}"
+    status_code: 200
+    timeout: 5
+  register: healthcheck
+  until: healthcheck.status == 200
+  retries: "{{ healthcheck_retries }}"
+  delay: "{{ healthcheck_delay }}"
+  ignore_errors: yes
+
+- name: Tampilkan status deployment
+  ansible.builtin.debug:
+    msg: >-
+      {% if healthcheck.status is defined and healthcheck.status == 200 %}
+      ✅ Deployment BERHASIL! Aplikasi berjalan di http://{{ ansible_host }}:{{ app_host_port }}
+      {% else %}
+      ❌ Deployment GAGAL! Smoke test tidak berhasil. Memulai rollback...
+      {% endif %}
+
+# --- Rollback Otomatis Jika Gagal ---
+- name: Rollback ke versi sebelumnya jika smoke test gagal
+  block:
+    - name: Baca image versi sebelumnya
+      ansible.builtin.slurp:
+        src: "{{ deploy_dir }}/.previous_image"
+      register: previous_image_file
+
+    - name: Set previous image variable
+      ansible.builtin.set_fact:
+        rollback_image: "{{ previous_image_file.content | b64decode | trim }}"
+
+    - name: Rollback - Deploy ulang versi sebelumnya
+      ansible.builtin.shell: |
+        cd {{ deploy_dir }}
+        docker compose down --remove-orphans || true
+        docker pull {{ rollback_image }}
+        export IMAGE_TAG={{ rollback_image.split(':')[-1] }}
+        docker compose up -d
+      environment:
+        IMAGE_TAG: "{{ rollback_image.split(':')[-1] }}"
+
+    - name: Rollback - Verifikasi health check
+      ansible.builtin.uri:
+        url: "{{ healthcheck_url }}"
+        status_code: 200
+        timeout: 5
+      register: rollback_health
+      until: rollback_health.status == 200
+      retries: 5
+      delay: 5
+
+    - name: Tampilkan status rollback
+      ansible.builtin.debug:
+        msg: "⚠️ ROLLBACK selesai ke image: {{ rollback_image }}"
+
+    - name: Gagalkan playbook setelah rollback
+      ansible.builtin.fail:
+        msg: "Deployment gagal dan rollback telah dilakukan ke {{ rollback_image }}"
+  when: healthcheck.status is not defined or healthcheck.status != 200

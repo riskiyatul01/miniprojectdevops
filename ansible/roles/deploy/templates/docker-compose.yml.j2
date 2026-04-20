@@ -1,0 +1,28 @@
+---
+# =====================================================
+# Docker Compose — Target Deployment Node
+# Digunakan untuk menjalankan aplikasi di environment
+# production/staging pada target VM.
+# =====================================================
+
+services:
+  {{ app_name }}:
+    image: {{ dockerhub_image }}:${IMAGE_TAG:-latest}
+    container_name: {{ app_name }}
+    restart: unless-stopped
+    ports:
+      - "{{ app_host_port }}:{{ app_container_port }}"
+    environment:
+      - NODE_ENV=production
+      - PORT={{ app_container_port }}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:{{ app_container_port }}/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

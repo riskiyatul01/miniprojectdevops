@@ -1,0 +1,45 @@
+---
+# =====================================================
+# Playbook: Setup Semua Node
+# Dijalankan SEKALI untuk konfigurasi awal VM
+# 
+# Penggunaan:
+#   ansible-playbook playbook-setup-all.yml
+# =====================================================
+
+# --- Play 1: Konfigurasi Dasar + Docker untuk Semua Node ---
+- name: Setup dasar semua node (common + Docker)
+  hosts: all
+  become: yes
+  roles:
+    - common
+    - docker
+
+# --- Play 2: Konfigurasi Jenkins Node ---
+- name: Setup Jenkins CI/CD Orchestrator
+  hosts: jenkins
+  become: yes
+  roles:
+    - jenkins
+
+# --- Play 3: Persiapan Target Node ---
+- name: Persiapan Target Deployment Node
+  hosts: target
+  become: yes
+  tasks:
+    - name: Buat direktori deployment
+      ansible.builtin.file:
+        path: "{{ deploy_dir }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+
+    - name: Tampilkan informasi target node
+      ansible.builtin.debug:
+        msg: |
+          ✅ Target Node siap!
+          - IP: {{ ansible_host }}
+          - Docker: terinstall
+          - Deploy dir: {{ deploy_dir }}
+          - App port: {{ app_host_port }}
