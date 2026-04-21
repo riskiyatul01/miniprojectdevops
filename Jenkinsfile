@@ -27,6 +27,8 @@ pipeline {
 
                     // Ekstrak IP: Cari baris setelah 'target-node:', ambil IP pertama yang ditemukan
                     try {
+                        sh "ls -R ${ANSIBLE_DIR} || echo 'ANSIBLE_DIR not found'"
+                        sh "cat ${ANSIBLE_DIR}/inventory/hosts.yml || echo 'hosts.yml not found'"
                         def ip = sh(
                             script: "grep -A 5 'target-node:' ${ANSIBLE_DIR}/inventory/hosts.yml | grep -oE '[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' | head -n 1",
                             returnStdout: true
