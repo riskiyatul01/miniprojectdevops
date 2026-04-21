@@ -17,6 +17,7 @@ pipeline {
         // --- Dynamic IPs (Extracted in stages) ---
         TARGET_NODE_IP = ""
         SHORT_COMMIT = ""
+        PREV_BUILD = "${(env.BUILD_NUMBER.toInteger() > 1) ? env.BUILD_NUMBER.toInteger() - 1 : 1}"
     }
 
     stages {
@@ -155,7 +156,37 @@ pipeline {
             echo "Deployment Successful!"
         }
         failure {
-            echo "Deployment Failed. Check logs."
+            echo "=========================================="
+            echo "PIPELINE GAGAL - Menjalankan Rollback..."
+            echo "=========================================="
+            
+            withCredentials([
+                usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS'),
+                sshUserPrivateKey(credentialsId: 'target-node-ssh', keyFileVariable: 'SSH_KEY_PATH', usernameVariable: 'SSH_USER')
+            ]) {
+                script {
+                    // Hanya jalankan rollback jika build sebelumnya bukan build pertama
+                    if (env.BUILD_NUMBER.toInteger() > 1) {
+                        sh """
+                            export ANSIBLE_CONFIG=${env.ANSIBLE_CONFIG}
+                            export ANSIBLE_HOST_KEY_CHECKING=False
+                            
+                            # Jalankan rollback ke build number sebelumnya
+                            ansible-playbook ${env.ANSIBLE_DIR}/playbook-deploy.yml \
+                              -i ${env.ANSIBLE_DIR}/inventory/hosts.yml \
+                              --private-key=\${SSH_KEY_PATH} \
+                              -e "ansible_user=\${SSH_USER}" \
+                              -e "ansible_ssh_private_key_file=\${SSH_KEY_PATH}" \
+                              -e "image_tag=build-${env.PREV_BUILD}" \
+                              -e "dockerhub_password=${DH_PASS}" \
+                              -v
+                        """
+                        echo "✅ Rollback Berhasil ke Build #${env.PREV_BUILD}"
+                    } else {
+                        echo "⚠️ Tidak ada build sebelumnya untuk rollback."
+                    }
+                }
+            }
         }
     }
 }
