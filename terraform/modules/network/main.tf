@@ -63,6 +63,31 @@ resource "azurerm_network_security_group" "jenkins_nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
+  # --- Outbound Rules (Penting untuk Email & Scout) ---
+  security_rule {
+    name                       = "Allow-HTTPS-Out"
+    priority                   = 2001
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "Allow-SMTP-587-Out"
+    priority                   = 2002
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "587"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
 }
 
 resource "azurerm_network_security_group" "target_nsg" {
