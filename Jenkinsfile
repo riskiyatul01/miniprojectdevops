@@ -115,17 +115,21 @@ pipeline {
                     usernameVariable: 'DH_USER',
                     passwordVariable: 'DH_PASS'
                 )]) {
-                    sh """
-                        export ANSIBLE_CONFIG=${env.ANSIBLE_CONFIG}
-                        export ANSIBLE_HOST_KEY_CHECKING=False
-                        
-                        ansible-playbook ${env.ANSIBLE_DIR}/playbook-deploy.yml \
-                          -i ${env.ANSIBLE_DIR}/inventory/hosts.yml \
-                          -e "image_tag=build-${env.BUILD_NUMBER}" \
-                          -e "dockerhub_password=${DH_PASS}" \
-                          -v
-                    """
+                    sshagent(['target-node-ssh']) {
+                        sh """
+                            export ANSIBLE_CONFIG=${env.ANSIBLE_CONFIG}
+                            export ANSIBLE_HOST_KEY_CHECKING=False
+
+                            ansible-playbook ${env.ANSIBLE_DIR}/playbook-deploy.yml \
+                              -i ${env.ANSIBLE_DIR}/inventory/hosts.yml \
+                              -e "image_tag=build-${env.BUILD_NUMBER}" \
+                              -e "dockerhub_password=${DH_PASS}" \
+                              -v
+                        """
+                    }
                 }
+            }
+        }
             }
         }
 
