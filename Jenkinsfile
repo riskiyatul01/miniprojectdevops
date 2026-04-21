@@ -15,7 +15,7 @@ pipeline {
         ANSIBLE_CONFIG = "${ANSIBLE_DIR}/ansible.cfg"
         
         // --- Dynamic IPs (Extracted in stages) ---
-        TARGET_NODE_IP = "65.52.160.192"
+        TARGET_NODE_IP = ""
         SHORT_COMMIT = ""
     }
 
