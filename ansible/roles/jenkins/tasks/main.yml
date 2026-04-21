@@ -108,6 +108,8 @@
     -v {{ jenkins_casc_dir }}:/var/jenkins_casc:ro
     -e CASC_JENKINS_CONFIG=/var/jenkins_casc/jenkins-casc.yml
     -e TARGET_SSH_KEY="$(cat ~/.ssh/id_rsa)"
+    -e GIT_COMMITTER_NAME=fioreenza \
+    -e GIT_COMMITTER_EMAIL=fiorenzanalle05@gmail.com \
     -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
     {{ jenkins_image }}
   register: jenkins_container

@@ -48,6 +48,10 @@ unclassified:
     url: "{{ jenkins_url }}"
     adminAddress: "admin@miniproject-devops.local"
 
+  gitSCM:
+    globalConfigEmail: "fiorenzanalle05@gmail.com"
+    globalConfigName: "fioreenza"
+
   # Konfigurasi Email Notification (SMTP)
   mailer:
     smtpHost: "smtp.gmail.com"
@@ -58,10 +62,6 @@ unclassified:
     authentication:
       username: "{{ vault_smtp_username }}"
       password: "{{ vault_smtp_password }}"
-  
-  gitSCM:
-    globalConfigEmail: "fiorenzanalle05@gmail.com"
-    globalConfigName: "fioreenza"
 
 # =====================================================
 # Tool Configuration
@@ -115,12 +115,15 @@ jobs:
         definition {
           cpsScm {
             scm {
-              git('{{ github_repo_url }}.git', 'main')
+              git {
+                remote {
+                  url('https://github.com/riskiyatul01/miniprojectdevops.git')
+                }
+                branches('*/main')
+                extensions { } 
+              }
             }
             scriptPath('Jenkinsfile')
           }
-        }
-        triggers {
-          scm('* * * * *')
         }
       }
