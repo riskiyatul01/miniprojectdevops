@@ -14,8 +14,8 @@ pipeline {
         ANSIBLE_DIR = "/var/jenkins_home/ansible"
         ANSIBLE_CONFIG = "${ANSIBLE_DIR}/ansible.cfg"
         
-        // --- Dynamic IPs (Extracted in stages) ---
-        TARGET_NODE_IP = ""
+        // --- Dynamic IPs ---
+        TARGET_NODE_IP = "65.52.160.192"
         SHORT_COMMIT = ""
         PREV_BUILD = "${(env.BUILD_NUMBER.toInteger() > 1) ? env.BUILD_NUMBER.toInteger() - 1 : 1}"
     }
@@ -25,11 +25,7 @@ pipeline {
             steps {
                 script {
                     env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()      
-
-                    // DEMI ETS YANG SUKSES: Kita hardcode IP-nya di sini
-                    // karena Jenkins Groovy Sandbox menolak Regex ekstraksi kita.
-                    env.TARGET_NODE_IP = "65.52.160.192"
-                    echo "✅ IP Target Ditetapkan Manual: ${env.TARGET_NODE_IP}"
+                    echo "✅ IP Target Siap: ${env.TARGET_NODE_IP}"
                 }
             }
         }
