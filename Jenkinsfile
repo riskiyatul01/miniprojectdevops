@@ -25,35 +25,40 @@ pipeline {
                 script {
                     env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()      
 
-                    // Mencari IP Target di inventory
                     def inventoryPath = "${ANSIBLE_DIR}/inventory/hosts.yml"
                     echo "Mencari inventory di: ${inventoryPath}"
                     
                     if (fileExists(inventoryPath)) {
-                        def fileContent = sh(script: "cat ${inventoryPath}", returnStdout: true)
-                        echo "Isi Inventory:\n${fileContent}"
-                        
-                        // Cara paling simpel dan pasti pakai shell grep
-                        def ip = sh(
-                            script: "grep -A 1 'target-node:' ${inventoryPath} | grep 'ansible_host:' | awk '{print \$2}'",
-                            returnStdout: true
-                        ).trim()
+                        // Gunakan Python untuk mencari IP setelah kata 'target-node'
+                        // Cara ini jauh lebih kuat daripada grep/sed
+                        def pythonCmd = """
+import re
+import sys
+try:
+    with open('${inventoryPath}', 'r') as f:
+        content = f.read()
+        # Mencari pola target-node lalu mengambil IP pertama setelahnya
+        match = re.search(r'target-node:.*?ansible_host:\\s*([0-9.]+)', content, re.DOTALL)
+        if match:
+            print(match.group(1))
+        else:
+            # Fallback: ambil IP terakhir di file jika target-node spesifik gagal
+            ips = re.findall(r'[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}', content)
+            if ips:
+                print(ips[-1])
+except Exception as e:
+    pass
+"""
+                        def ip = sh(script: "python3 -c \"${pythonCmd}\" || python -c \"${pythonCmd}\"", returnStdout: true).trim()
 
-                        if (ip) {
+                        if (ip && ip != "" && ip != "None") {
                             env.TARGET_NODE_IP = ip
-                            echo "✅ IP Target Ditemukan: ${env.TARGET_NODE_IP}"
+                            echo "✅ IP Target Berhasil Diekstrak: ${env.TARGET_NODE_IP}"
                         } else {
-                            // Fallback: Cari IP apa saja di file itu
-                            def fallbackMatch = (fileContent =~ /([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/)
-                            if (fallbackMatch.find()) {
-                                env.TARGET_NODE_IP = fallbackMatch.group(1)
-                                echo "⚠️ IP Ditemukan via Fallback: ${env.TARGET_NODE_IP}"
-                            } else {
-                                error "Format IP tidak ditemukan di hosts.yml"
-                            }
+                            error "Gagal mengekstrak IP! Isi file inventory tidak dikenali."
                         }
                     } else {
-                        error "File inventory TIDAK DITEMUKAN di ${inventoryPath}. Pastikan kamu sudah jalankan ansible-playbook dari laptop!"
+                        error "File inventory tidak ditemukan di ${inventoryPath}!"
                     }
                 }
             }
