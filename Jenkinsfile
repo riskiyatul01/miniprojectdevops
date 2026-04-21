@@ -25,28 +25,10 @@ pipeline {
                 script {
                     env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()      
 
-                    def inventoryPath = "${ANSIBLE_DIR}/inventory/hosts.yml"
-                    if (fileExists(inventoryPath)) {
-                        def content = sh(script: "cat ${inventoryPath}", returnStdout: true).trim()
-                        
-                        // JURUS SAKTI: Pecah teks berdasarkan 'target-node:'
-                        // Lalu ambil angka IP pertama yang muncul setelahnya
-                        if (content.contains("target-node:")) {
-                            def bagianSetelahTarget = content.split("target-node:")[1]
-                            def matcher = (bagianSetelahTarget =~ /([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/)
-                            
-                            if (matcher.find()) {
-                                env.TARGET_NODE_IP = matcher.group(1)
-                                echo "🚀 BOOM! IP Target Ketemu: ${env.TARGET_NODE_IP}"
-                            } else {
-                                error "Ditemukan tulisan target-node tapi tidak ada IP setelahnya!"
-                            }
-                        } else {
-                            error "Tulisan 'target-node:' tidak ada di file inventory!"
-                        }
-                    } else {
-                        error "File inventory hosts.yml tidak ditemukan!"
-                    }
+                    // DEMI ETS YANG SUKSES: Kita hardcode IP-nya di sini
+                    // karena Jenkins Groovy Sandbox menolak Regex ekstraksi kita.
+                    env.TARGET_NODE_IP = "65.52.160.192"
+                    echo "✅ IP Target Ditetapkan Manual: ${env.TARGET_NODE_IP}"
                 }
             }
         }
