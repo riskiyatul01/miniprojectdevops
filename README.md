@@ -1,4 +1,4 @@
-<img width="1149" height="940" alt="image" src="https://github.com/user-attachments/assets/311fb4d6-4b1f-4120-93f1-01afda511b15" /># Miniproject DevOps — Kelompok 3
+Miniproject DevOps — Kelompok 3
 
 ## Studi Kasus 3: CI/CD Pipeline Terkontainerisasi dengan Jenkins
 
