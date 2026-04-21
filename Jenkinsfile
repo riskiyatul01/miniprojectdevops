@@ -150,12 +150,36 @@ pipeline {
             archiveArtifacts artifacts: 'scan-result.txt', allowEmptyArchive: true
         }
         success {
-            echo "Deployment Successful!"
+            echo "Deployment Successful! Mengirim email..."
+            emailext(
+                subject: "✅ Jenkins Build #${env.BUILD_NUMBER} BERHASIL - ${env.APP_NAME}",
+                body: """
+                    <h3>Pipeline Berhasil!</h3>
+                    <p><b>Job:</b> ${env.JOB_NAME}<br>
+                    <b>Build:</b> #${env.BUILD_NUMBER}<br>
+                    <b>Status:</b> <span style="color:green">SUCCESS</span></p>
+                    <p>Cek detail: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                """,
+                to: "${env.EMAIL_TO}"
+            )
         }
         failure {
             echo "=========================================="
-            echo "PIPELINE GAGAL - Menjalankan Rollback..."
+            echo "PIPELINE GAGAL - Menjalankan Rollback & Kirim Email..."
             echo "=========================================="
+            
+            emailext(
+                subject: "❌ Jenkins Build #${env.BUILD_NUMBER} GAGAL - ${env.APP_NAME}",
+                body: """
+                    <h3>Pipeline Gagal!</h3>
+                    <p><b>Job:</b> ${env.JOB_NAME}<br>
+                    <b>Build:</b> #${env.BUILD_NUMBER}<br>
+                    <b>Status:</b> <span style="color:red">FAILURE</span></p>
+                    <p>Jenkins sedang menjalankan rollback otomatis ke versi sebelumnya.</p>
+                    <p>Cek log: <a href="${env.BUILD_URL}console">${env.BUILD_URL}console</a></p>
+                """,
+                to: "${env.EMAIL_TO}"
+            )
             
             withCredentials([
                 usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS'),
