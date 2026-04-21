@@ -5,7 +5,7 @@ pipeline {
         // --- Centralized Config ---
         APP_NAME = "simple-app"
         APP_VERSION = "1.0.0"
-        DOCKERHUB_USER = "fioreenza"
+        DOCKERHUB_USER = "ax3lrod"
         DOCKER_IMAGE = "${DOCKERHUB_USER}/${APP_NAME}"
         TARGET_NODE_USER = "ubuntu"
         DEPLOY_DIR = "/opt/app-deployment"
@@ -115,18 +115,19 @@ pipeline {
                     usernameVariable: 'DH_USER',
                     passwordVariable: 'DH_PASS'
                 )]) {
-                    sshagent(['target-node-ssh']) {
-                        sh """
-                            export ANSIBLE_CONFIG=${env.ANSIBLE_CONFIG}
-                            export ANSIBLE_HOST_KEY_CHECKING=False
-
-                            ansible-playbook ${env.ANSIBLE_DIR}/playbook-deploy.yml \
-                              -i ${env.ANSIBLE_DIR}/inventory/hosts.yml \
-                              -e "image_tag=build-${env.BUILD_NUMBER}" \
-                              -e "dockerhub_password=${DH_PASS}" \
-                              -v
-                        """
-                    }
+                        sshagent(['target-node-ssh']) {
+                            sh """
+                                export ANSIBLE_CONFIG=${env.ANSIBLE_CONFIG}
+                                export ANSIBLE_HOST_KEY_CHECKING=False
+                                
+                                ansible-playbook ${env.ANSIBLE_DIR}/playbook-deploy.yml \
+                                  -i ${env.ANSIBLE_DIR}/inventory/hosts.yml \
+                                  -e "ansible_ssh_private_key_file=" \
+                                  -e "image_tag=build-${env.BUILD_NUMBER}" \
+                                  -e "dockerhub_password=${DH_PASS}" \
+                                  -v
+                            """
+                        }
                 }
             }
         }
