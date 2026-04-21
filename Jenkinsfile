@@ -130,8 +130,6 @@ pipeline {
                 }
             }
         }
-            }
-        }
 
         stage('Smoke Test') {
             steps {
