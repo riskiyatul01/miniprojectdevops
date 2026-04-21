@@ -172,37 +172,16 @@ terraform output
 ```
 Output ini akan digunakan oleh ansible dalam template inventory/hosts.yml dan group_vars/target.yml sebagai variable IP yang dibuat secara otomatis setelah terraform apply.
 
-#### Tahap 2: Containerization & CI/CD Pipeline (Docker + Jenkins)
-Tahap ini berfokus pada pengemasan aplikasi ke dalam Docker dan penyusunan alur kerja otomatis di Jenkins.
-
-### 2.1 Multi-stage Docker Build
-Aplikasi dibangun menggunakan file Dockerfile dengan strategi Multi-stage build untuk meminimalkan ukuran image dan meningkatkan keamanan:
-- Stage Build: Menggunakan node:20-alpine untuk menginstall dependensi.
-- Stage Runtime: Hanya mengambil file yang diperlukan, menggunakan tini sebagai init process, dan menjalankan aplikasi dengan user non-root (node).
-
-### 2.2 Jenkins Configuration as Code (JCasC)
-Alih-alih konfigurasi manual, Jenkins dikonfigurasi menggunakan file ansible/roles/jenkins/templates/jenkins-casc.yml.j2. Untuk otomatisasi user admin, password, plugin, kredensial Docker Hub, hingga Job Pipeline dibuat secara otomatis saat Ansible dijalankan.
-
-### 2.3 Struktur Jenkinsfile (The Pipeline)
-Pipeline didefinisikan dalam Jenkinsfile dengan alur sebagai berikut:
-1. Initial Setup: Mengambil commit ID pendek untuk tagging.
-2. Build: Membuat image Docker dengan 3 tag sekaligus (latest, build-number, commit-sha).
-3. Security Scan (DevSecOps): Menggunakan Docker Scout untuk memindai kerentanan (CVE). Pipeline akan FAIL jika ditemukan kerentanan level CRITICAL.
-4. Push: Mengunggah image yang aman ke Docker Hub.
-5. Deploy via Ansible: Jenkins memicu playbook-deploy.yml untuk memperbarui aplikasi di Target Node.
-6. Smoke Test: Melakukan pengujian HTTP ke endpoint /health milik Target Node.
-7. Rollback: Jika Smoke Test gagal, Jenkins memicu deployment ulang ke versi (build number) sebelumnya.
-
-### Tahap 3: Configuration as Code (Ansible)
+### Tahap 2: Configuration as Code (Ansible)
 Ansible berperan sebagai "perekat" yang mengonfigurasi VM yang telah dibuat oleh Terraform.
 
-### 3.1 Integrasi Terraform & Ansible
+### 2.1 Integrasi Terraform & Ansible
 Proyek ini menggunakan fitur local_file pada Terraform untuk menulis file secara otomatis:
 - ansible/inventory/hosts.yml: Berisi IP dinamis dari Azure.
 - ansible/group_vars/target.yml: Berisi variabel IP Target Node.
 Hal ini memastikan tidak ada IP yang perlu di-input manual.
 
-### 3.2 Menjalankan Setup Infrastruktur
+### 2.2 Menjalankan Setup Infrastruktur
 Jalankan perintah ini di mesin lokal untuk mengonfigurasi kedua VM:
 ```
 cd ansible
@@ -212,13 +191,33 @@ lalu
 ansible-playbook playbook-setup-all.yml
 ```
 <img width="1149" height="940" alt="image" src="https://github.com/user-attachments/assets/e8361fba-e6fb-469c-bb2a-f0d53aec039c" />
-
-
-### 3.3 Mekanisme Deployment & Rollback (Ansible Role)
+### 2.3 Mekanisme Deployment & Rollback (Ansible Role)
 Role deploy pada Ansible dirancang dengan prinsip High Availability:
 - Backup: Sebelum update, Ansible mencatat image yang sedang berjalan ke file .previous_image.
 - Atomic: Menggunakan Docker Compose untuk memastikan transisi container yang lancar.
 - Auto-Rollback: Jika uri module mendeteksi status code selain 200 pada healthcheck, Ansible akan mengeksekusi blok rescue untuk mengembalikan ke image versi sebelumnya secara instan.
+
+#### Tahap 3: Containerization & CI/CD Pipeline (Docker + Jenkins)
+Tahap ini berfokus pada pengemasan aplikasi ke dalam Docker dan penyusunan alur kerja otomatis di Jenkins.
+
+### 3.1 Multi-stage Docker Build
+Aplikasi dibangun menggunakan file Dockerfile dengan strategi Multi-stage build untuk meminimalkan ukuran image dan meningkatkan keamanan:
+- Stage Build: Menggunakan node:20-alpine untuk menginstall dependensi.
+- Stage Runtime: Hanya mengambil file yang diperlukan, menggunakan tini sebagai init process, dan menjalankan aplikasi dengan user non-root (node).
+
+### 3.2 Jenkins Configuration as Code (JCasC)
+Alih-alih konfigurasi manual, Jenkins dikonfigurasi menggunakan file ansible/roles/jenkins/templates/jenkins-casc.yml.j2. Untuk otomatisasi user admin, password, plugin, kredensial Docker Hub, hingga Job Pipeline dibuat secara otomatis saat Ansible dijalankan.
+
+<img width="1917" height="825" alt="image" src="https://github.com/user-attachments/assets/0e229df0-e9e7-4d37-ae40-888f70e77837" />
+### 3.3 Struktur Jenkinsfile (The Pipeline)
+Pipeline didefinisikan dalam Jenkinsfile dengan alur sebagai berikut:
+1. Initial Setup: Mengambil commit ID pendek untuk tagging.
+2. Build: Membuat image Docker dengan 3 tag sekaligus (latest, build-number, commit-sha).
+3. Security Scan (DevSecOps): Menggunakan Docker Scout untuk memindai kerentanan (CVE). Pipeline akan FAIL jika ditemukan kerentanan level CRITICAL.
+4. Push: Mengunggah image yang aman ke Docker Hub.
+5. Deploy via Ansible: Jenkins memicu playbook-deploy.yml untuk memperbarui aplikasi di Target Node.
+6. Smoke Test: Melakukan pengujian HTTP ke endpoint /health milik Target Node.
+7. Rollback: Jika Smoke Test gagal, Jenkins memicu deployment ulang ke versi (build number) sebelumnya.
 
 
 ## Hasil dan Analisis (Bukti Implementasi)
@@ -227,9 +226,12 @@ Setelah Ansible selesai, verifikasi status semua node:
 ```
 ansible-playbook playbook-verify.yml
 ```
+<img width="1149" height="313" alt="image" src="https://github.com/user-attachments/assets/d8b4a330-443c-48d1-b365-1c1d2a7cb388" />
 Hasil: Docker dan Jenkins harus berstatus "Running" di masing-masing node.
 
 2. Keamanan (DevSecOps)
+<img width="1208" height="559" alt="image" src="https://github.com/user-attachments/assets/4d407986-4c69-432f-b48c-34f3490bc3f7" />
+<img width="1485" height="1042" alt="image" src="https://github.com/user-attachments/assets/11dde88d-6dee-4e89-bf32-06afd9b5a0f4" />
 Berdasarkan implementasi pada Jenkinsfile, pipeline melakukan pengawasan ketat:
 Jika Docker Scout menemukan CRITICAL vulnerability, pipeline akan berhenti (Aborted).
 Hal ini mencegah pengiriman kode rentan ke lingkungan produksi.
