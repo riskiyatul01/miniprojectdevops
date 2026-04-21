@@ -70,11 +70,12 @@ pipeline {
                         echo "--- Scan Result Summary ---"
                         sh "grep -E 'CRITICAL|HIGH' scan-result.txt || echo 'No Critical/High found'"
                         
-                        // Check for CRITICAL vulnerabilities
-                        if (scanOutput.contains("CRITICAL")) {
-                            echo "⚠️ CRITICAL Vulnerabilities found!"
-                            // Uncomment line below if you want to strictly block on Critical
-                            // error("Build stopped due to Critical vulnerabilities")
+                        // Syarat Tahap 1: Fail jika ada CRITICAL atau HIGH
+                        if (scanOutput.contains("CRITICAL") || scanOutput.contains("HIGH")) {
+                            echo "❌ SECURITY GATE FAILED: Ditemukan kerentanan tingkat CRITICAL atau HIGH!"
+                            error("Build dihentikan demi keamanan karena ditemukan celah keamanan berbahaya.")
+                        } else {
+                            echo "✅ SECURITY GATE PASSED: Tidak ada kerentanan berbahaya ditemukan."
                         }
                     }
                 }
