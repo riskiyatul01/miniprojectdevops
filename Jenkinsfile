@@ -26,39 +26,26 @@ pipeline {
                     env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()      
 
                     def inventoryPath = "${ANSIBLE_DIR}/inventory/hosts.yml"
-                    echo "Mencari inventory di: ${inventoryPath}"
-                    
                     if (fileExists(inventoryPath)) {
-                        // Gunakan Python untuk mencari IP setelah kata 'target-node'
-                        // Cara ini jauh lebih kuat daripada grep/sed
-                        def pythonCmd = """
-import re
-import sys
-try:
-    with open('${inventoryPath}', 'r') as f:
-        content = f.read()
-        # Mencari pola target-node lalu mengambil IP pertama setelahnya
-        match = re.search(r'target-node:.*?ansible_host:\\s*([0-9.]+)', content, re.DOTALL)
-        if match:
-            print(match.group(1))
-        else:
-            # Fallback: ambil IP terakhir di file jika target-node spesifik gagal
-            ips = re.findall(r'[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}', content)
-            if ips:
-                print(ips[-1])
-except Exception as e:
-    pass
-"""
-                        def ip = sh(script: "python3 -c \"${pythonCmd}\" || python -c \"${pythonCmd}\"", returnStdout: true).trim()
-
-                        if (ip && ip != "" && ip != "None") {
-                            env.TARGET_NODE_IP = ip
-                            echo "✅ IP Target Berhasil Diekstrak: ${env.TARGET_NODE_IP}"
+                        def content = sh(script: "cat ${inventoryPath}", returnStdout: true).trim()
+                        
+                        // JURUS SAKTI: Pecah teks berdasarkan 'target-node:'
+                        // Lalu ambil angka IP pertama yang muncul setelahnya
+                        if (content.contains("target-node:")) {
+                            def bagianSetelahTarget = content.split("target-node:")[1]
+                            def matcher = (bagianSetelahTarget =~ /([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/)
+                            
+                            if (matcher.find()) {
+                                env.TARGET_NODE_IP = matcher.group(1)
+                                echo "🚀 BOOM! IP Target Ketemu: ${env.TARGET_NODE_IP}"
+                            } else {
+                                error "Ditemukan tulisan target-node tapi tidak ada IP setelahnya!"
+                            }
                         } else {
-                            error "Gagal mengekstrak IP! Isi file inventory tidak dikenali."
+                            error "Tulisan 'target-node:' tidak ada di file inventory!"
                         }
                     } else {
-                        error "File inventory tidak ditemukan di ${inventoryPath}!"
+                        error "File inventory hosts.yml tidak ditemukan!"
                     }
                 }
             }
