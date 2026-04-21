@@ -33,10 +33,14 @@ pipeline {
                         def fileContent = sh(script: "cat ${inventoryPath}", returnStdout: true)
                         echo "Isi Inventory:\n${fileContent}"
                         
-                        // Regex untuk mencari IP di bawah target-node
-                        def match = (fileContent =~ /target-node:[\s\S]*?ansible_host:\s+([0-9.]+)/)
-                        if (match.find()) {
-                            env.TARGET_NODE_IP = match.group(1)
+                        // Cara paling simpel dan pasti pakai shell grep
+                        def ip = sh(
+                            script: "grep -A 1 'target-node:' ${inventoryPath} | grep 'ansible_host:' | awk '{print \$2}'",
+                            returnStdout: true
+                        ).trim()
+
+                        if (ip) {
+                            env.TARGET_NODE_IP = ip
                             echo "✅ IP Target Ditemukan: ${env.TARGET_NODE_IP}"
                         } else {
                             // Fallback: Cari IP apa saja di file itu
