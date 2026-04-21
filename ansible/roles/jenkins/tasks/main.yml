@@ -162,7 +162,8 @@
     git config --global --add safe.directory '*'
   changed_when: false
 
-- name: Konfigurasi Git Identity 
+- name: Set Git global config 
+  ansible.builtin.command: >
     docker exec -u root {{ jenkins_container_name }}
     bash -c "git config --global user.email 'fiorenzanalle05@gmail.com' && git config --global user.name 'fioreenza'"
   changed_when: false
