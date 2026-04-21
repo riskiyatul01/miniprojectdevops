@@ -1,5 +1,6 @@
 # ============================================
 # Role: jenkins — Setup Jenkins Container + JCasC
+# OPTIMIZED VERSION
 # ============================================
 
 # --- Persiapan Direktori ---
@@ -44,58 +45,30 @@
     owner: "1000"
     group: "1000"
     mode: "0644"
+  register: plugins_file
 
-# --- Copy Ansible files ke jenkins_home (untuk deploy dari pipeline) ---
-- name: Copy ansible.cfg ke jenkins_home
+# --- Sync Ansible Files (Optimized with synchronize or copy) ---
+- name: Copy Ansible deployment files to jenkins_home
   ansible.builtin.copy:
-    src: "{{ playbook_dir }}/ansible.cfg"
-    dest: "{{ jenkins_home }}/ansible/ansible.cfg"
+    src: "{{ item.src }}"
+    dest: "{{ jenkins_home }}/ansible/{{ item.dest }}"
     owner: "1000"
     group: "1000"
     mode: "0644"
-
-- name: Copy inventory ke jenkins_home
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/inventory/"
-    dest: "{{ jenkins_home }}/ansible/inventory/"
-    owner: "1000"
-    group: "1000"
-    mode: "0644"
-    directory_mode: "0755"
-
-- name: Copy group_vars ke jenkins_home
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/group_vars/"
-    dest: "{{ jenkins_home }}/ansible/group_vars/"
-    owner: "1000"
-    group: "1000"
-    mode: "0644"
-    directory_mode: "0755"
-
-- name: Copy roles ke jenkins_home
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/roles/"
-    dest: "{{ jenkins_home }}/ansible/roles/"
-    owner: "1000"
-    group: "1000"
-    mode: "0644"
-    directory_mode: "0755"
-
-- name: Copy playbook-deploy.yml ke jenkins_home
-  ansible.builtin.copy:
-    src: "{{ playbook_dir }}/playbook-deploy.yml"
-    dest: "{{ jenkins_home }}/ansible/playbook-deploy.yml"
-    owner: "1000"
-    group: "1000"
-    mode: "0644"
+  with_items:
+    - { src: "{{ playbook_dir }}/ansible.cfg", dest: "ansible.cfg" }
+    - { src: "{{ playbook_dir }}/inventory/", dest: "inventory/" }
+    - { src: "{{ playbook_dir }}/group_vars/", dest: "group_vars/" }
+    - { src: "{{ playbook_dir }}/roles/", dest: "roles/" }
+    - { src: "{{ playbook_dir }}/playbook-deploy.yml", dest: "playbook-deploy.yml" }
 
 # --- Jalankan Jenkins Container ---
-- name: Hentikan Jenkins container lama (jika ada)
-  ansible.builtin.command: docker rm -f {{ jenkins_container_name }}
-  ignore_errors: yes
+- name: Cek apakah Jenkins sudah berjalan
+  ansible.builtin.command: docker ps -q -f name={{ jenkins_container_name }}
+  register: jenkins_running
   changed_when: false
 
-- name: Jalankan Jenkins container
+- name: Jalankan Jenkins container jika belum ada
   ansible.builtin.command: >
     docker run -d
     --name {{ jenkins_container_name }}
@@ -109,65 +82,48 @@
     -e TARGET_SSH_KEY="$(cat ~/.ssh/id_rsa)"
     -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
     {{ jenkins_image }}
-  register: jenkins_container
+  when: jenkins_running.stdout == ""
 
-# --- Tunggu Jenkins Siap ---
-- name: Tunggu Jenkins siap (max 120 detik)
-  ansible.builtin.uri:
-    url: "http://localhost:{{ jenkins_http_port }}/login"
-    status_code: 200
-    timeout: 10
-  register: jenkins_ready
-  until: jenkins_ready.status == 200
-  retries: 24
-  delay: 5
+# --- Post-Installations (Hanya jika container baru/update) ---
+- name: Install Tools & Plugins di Jenkins (Hanya jika plugins.txt berubah)
+  block:
+    - name: Update apt & Install Docker CLI + Ansible
+      ansible.builtin.command: >
+        docker exec -u root {{ jenkins_container_name }}
+        bash -c "apt-get update && apt-get install -y docker.io ansible sshpass"
 
-# --- Install Docker CLI & Ansible ---
-- name: Install Docker CLI di Jenkins container
-  ansible.builtin.command: >
-    docker exec -u root {{ jenkins_container_name }}
-    bash -c "apt-get update && apt-get install -y docker.io ansible sshpass"
+    - name: Install Jenkins plugins (INI TAHAP LAMA - Dijalankan hanya jika perlu)
+      ansible.builtin.command: >
+        docker exec {{ jenkins_container_name }}
+        jenkins-plugin-cli --plugin-file /var/jenkins_home/plugins.txt
+      register: plugin_install
+      ignore_errors: yes
+
+    - name: Restart Jenkins to apply plugins
+      ansible.builtin.command: docker restart {{ jenkins_container_name }}
+
+    - name: Tunggu Jenkins siap
+      ansible.builtin.uri:
+        url: "http://localhost:{{ jenkins_http_port }}/login"
+        status_code: 200
+        timeout: 10
+      until: jenkins_ready.status == 200
+      retries: 24
+      delay: 5
+      register: jenkins_ready
+  when: plugins_file.changed or jenkins_running.stdout == ""
+
+# --- Permission & Security Fixes (Selalu jalankan agar tetap sinkron) ---
+- name: Fix Docker Socket Permissions
+  ansible.builtin.command: docker exec -u root {{ jenkins_container_name }} chmod 666 /var/run/docker.sock
   changed_when: false
 
-# --- Install Plugins ---
-- name: Install Jenkins plugins dari plugins.txt
-  ansible.builtin.command: >
-    docker exec {{ jenkins_container_name }}
-    jenkins-plugin-cli --plugin-file /var/jenkins_home/plugins.txt
-  register: plugin_install
-  changed_when: "'Done' in plugin_install.stdout"
-  ignore_errors: yes
-
-- name: Restart Jenkins container setelah install plugins
-  ansible.builtin.command: docker restart {{ jenkins_container_name }}
-
-- name: Tunggu Jenkins kembali siap setelah restart
-  ansible.builtin.uri:
-    url: "http://localhost:{{ jenkins_http_port }}/login"
-    status_code: 200
-    timeout: 10
-  register: jenkins_restarted
-  until: jenkins_restarted.status == 200
-  retries: 24
-  delay: 5
-
-- name: Berikan izin akses Docker socket
-  ansible.builtin.command: >
-    docker exec -u root {{ jenkins_container_name }} chmod 666 /var/run/docker.sock
-  changed_when: false
-
-- name: Fix Git safe directory
+- name: Configure Git Identity in Jenkins
   ansible.builtin.command: >
     docker exec -u root {{ jenkins_container_name }}
-    git config --global --add safe.directory '*'
-  changed_when: false
-
-- name: Set Git global config 
-  ansible.builtin.command: >
-    docker exec -u root {{ jenkins_container_name }}
-    bash -c "git config --global user.email 'fiorenzanalle05@gmail.com' && git config --global user.name 'fioreenza'"
+    bash -c "git config --global user.email '{{ git_email }}' && git config --global user.name '{{ git_name }}' && git config --global --add safe.directory '*'"
   changed_when: false
 
 - name: Tampilkan status Jenkins
   ansible.builtin.debug:
-    msg: "✅ Jenkins siap diakses di {{ jenkins_url }}"
+    msg: "✅ Jenkins OPTIMIZED siap diakses di {{ jenkins_url }}"

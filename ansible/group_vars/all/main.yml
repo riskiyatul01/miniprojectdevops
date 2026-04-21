@@ -13,7 +13,7 @@ app_version: "1.0.0"
 app_port: 3000
 
 # Docker Hub
-dockerhub_username: "kelompok3devops"
+dockerhub_username: "ax3lrod"
 dockerhub_image: "{{ dockerhub_username }}/{{ app_name }}"
 
 # GitHub Repository

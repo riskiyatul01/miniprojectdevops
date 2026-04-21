@@ -41,9 +41,10 @@ jenkins_url: "http://{{ ansible_host }}:{{ jenkins_http_port }}"
 # Number of Executors
 jenkins_num_executors: 2
 
-# Docker Hub Credentials untuk JCasC
+# Docker Hub Credentials
+dockerhub_username: "ax3lrod"
 dockerhub_creds_id: "dockerhub-creds"
-dockerhub_password: "{{ vault_dockerhub_password }}"           # ⚠️ Production: pindahkan ke Vault
+dockerhub_password: "{{ vault_dockerhub_password }}"
 
 # Pipeline Job
 jenkins_job_name: "miniproject-devops"

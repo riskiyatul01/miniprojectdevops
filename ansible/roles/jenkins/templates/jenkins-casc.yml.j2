@@ -46,13 +46,13 @@ jenkins:
 unclassified:
   location:
     url: "{{ jenkins_url }}"
-    adminAddress: "admin@miniproject-devops.local"
+    adminAddress: "{{ vault_smtp_username }}"
 
   gitSCM:
-    globalConfigEmail: "fiorenzanalle05@gmail.com"
-    globalConfigName: "fioreenza"
+    globalConfigEmail: "{{ git_email }}"
+    globalConfigName: "{{ git_name }}"
 
-  # Konfigurasi Email Notification (SMTP)
+  # Konfigurasi Email Notification Standar
   mailer:
     smtpHost: "smtp.gmail.com"
     smtpPort: "587"
