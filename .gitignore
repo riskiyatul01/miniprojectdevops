@@ -13,6 +13,8 @@ crash.log
 # Ansible
 ansible/*.retry
 ansible/group_vars/all/vault.yml
+target.yml
+hosts.yml
 
 # OS
 .DS_Store
