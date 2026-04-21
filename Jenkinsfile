@@ -25,24 +25,31 @@ pipeline {
                 script {
                     env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()      
 
-                    // Ekstrak IP: Cari baris setelah 'target-node:', ambil IP pertama yang ditemukan
-                    try {
-                        sh "ls -R ${ANSIBLE_DIR} || echo 'ANSIBLE_DIR not found'"
-                        sh "cat ${ANSIBLE_DIR}/inventory/hosts.yml || echo 'hosts.yml not found'"
-                        def ip = sh(
-                            script: "grep -A 5 'target-node:' ${ANSIBLE_DIR}/inventory/hosts.yml | grep -oE '[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' | head -n 1",
-                            returnStdout: true
-                        ).trim()
-
-                        if (ip) {
-                            env.TARGET_NODE_IP = ip
+                    // Mencari IP Target di inventory
+                    def inventoryPath = "${ANSIBLE_DIR}/inventory/hosts.yml"
+                    echo "Mencari inventory di: ${inventoryPath}"
+                    
+                    if (fileExists(inventoryPath)) {
+                        def fileContent = sh(script: "cat ${inventoryPath}", returnStdout: true)
+                        echo "Isi Inventory:\n${fileContent}"
+                        
+                        // Regex untuk mencari IP di bawah target-node
+                        def match = (fileContent =~ /target-node:[\s\S]*?ansible_host:\s+([0-9.]+)/)
+                        if (match.find()) {
+                            env.TARGET_NODE_IP = match.group(1)
                             echo "✅ IP Target Ditemukan: ${env.TARGET_NODE_IP}"
                         } else {
-                            error "Gagal menemukan IP di inventory!"
+                            // Fallback: Cari IP apa saja di file itu
+                            def fallbackMatch = (fileContent =~ /([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})/)
+                            if (fallbackMatch.find()) {
+                                env.TARGET_NODE_IP = fallbackMatch.group(1)
+                                echo "⚠️ IP Ditemukan via Fallback: ${env.TARGET_NODE_IP}"
+                            } else {
+                                error "Format IP tidak ditemukan di hosts.yml"
+                            }
                         }
-                    } catch (e) {
-                        echo "❌ Error: ${e.message}"
-                        error "Pastikan file inventory sudah di-generate oleh Terraform di ${ANSIBLE_DIR}/inventory/hosts.yml"
+                    } else {
+                        error "File inventory TIDAK DITEMUKAN di ${inventoryPath}. Pastikan kamu sudah jalankan ansible-playbook dari laptop!"
                     }
                 }
             }
