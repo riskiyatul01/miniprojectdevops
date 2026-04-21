@@ -7,7 +7,7 @@
 
 services:
   simple-app:
-    image: kelompok3devops/simple-app:latest
+    image: ax3lrod/simple-app:latest
     container_name: simple-app
     restart: unless-stopped
     ports:

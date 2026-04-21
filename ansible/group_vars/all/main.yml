@@ -13,8 +13,8 @@ app_version: "1.0.0"
 app_port: 3000
 
 # Docker Hub
-dockerhub_username: "{{ vault_dockerhub_username }}"      
-dockerhub_password: "{{ vault_dockerhub_pat }}"             
+dockerhub_username: "ax3lrod"
+dockerhub_password: "{{ vault_dockerhub_password }}"
 dockerhub_image: "{{ dockerhub_username }}/{{ app_name }}"
 
 # GitHub Repository

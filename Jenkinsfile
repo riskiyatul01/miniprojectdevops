@@ -23,23 +23,28 @@ pipeline {
         stage('Initial Setup') {
             steps {
                 script {
-                    env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    
-                    // Ekstrak IP otomatis dari inventory agar tidak hardcoded
+                    env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()      
+
+                    // Ekstrak IP: Cari baris setelah 'target-node:', ambil IP pertama yang ditemukan
                     try {
-                        env.TARGET_NODE_IP = sh(
-                            script: "grep -A 2 'target-node:' ${ANSIBLE_DIR}/inventory/hosts.yml | grep 'ansible_host:' | awk '{print \$2}' | tr -d ' '",
+                        def ip = sh(
+                            script: "grep -A 5 'target-node:' ${ANSIBLE_DIR}/inventory/hosts.yml | grep -oE '[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' | head -n 1",
                             returnStdout: true
                         ).trim()
+
+                        if (ip) {
+                            env.TARGET_NODE_IP = ip
+                            echo "✅ IP Target Ditemukan: ${env.TARGET_NODE_IP}"
+                        } else {
+                            error "Gagal menemukan IP di inventory!"
+                        }
                     } catch (e) {
-                        echo "Warning: Gagal ekstrak IP dari inventory, fallback ke localhost atau periksa file inventory."
+                        echo "❌ Error: ${e.message}"
+                        error "Pastikan file inventory sudah di-generate oleh Terraform di ${ANSIBLE_DIR}/inventory/hosts.yml"
                     }
                 }
-                echo "Building: ${env.DOCKER_IMAGE}:${env.APP_VERSION}"
-                echo "Target IP: ${env.TARGET_NODE_IP}"
             }
         }
-
         stage('Verify Environment') {
             steps {
                 sh 'docker --version'
