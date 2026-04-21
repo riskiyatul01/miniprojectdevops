@@ -1,4 +1,4 @@
-# Miniproject DevOps — Kelompok 3
+<img width="1149" height="940" alt="image" src="https://github.com/user-attachments/assets/311fb4d6-4b1f-4120-93f1-01afda511b15" /># Miniproject DevOps — Kelompok 3
 
 ## Studi Kasus 3: CI/CD Pipeline Terkontainerisasi dengan Jenkins
 
@@ -211,6 +211,8 @@ lalu
 ```
 ansible-playbook playbook-setup-all.yml
 ```
+<img width="1149" height="940" alt="image" src="https://github.com/user-attachments/assets/e8361fba-e6fb-469c-bb2a-f0d53aec039c" />
+
 
 ### 3.3 Mekanisme Deployment & Rollback (Ansible Role)
 Role deploy pada Ansible dirancang dengan prinsip High Availability:
