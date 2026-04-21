@@ -17,7 +17,7 @@ jenkins_admin_user: "admin"
 jenkins_admin_password: "changeme"
 
 # Jenkins URL
-jenkins_url: "http://localhost:{{ jenkins_http_port }}"
+jenkins_url: "http://{{ ansible_host }}:{{ jenkins_http_port }}"
 
 # Number of executors
 jenkins_num_executors: 2

@@ -7,7 +7,7 @@ pipeline {
         SHORT_COMMIT = ""
         DOCKERHUB_USER = "kelompok3devops"
         DOCKER_IMAGE = "${DOCKERHUB_USER}/${APP_NAME}"
-        TARGET_NODE_IP = "20.205.234.122"
+        TARGET_NODE_IP = "70.153.151.129"
         TARGET_NODE_USER = "ubuntu"
         DEPLOY_DIR = "/opt/app-deployment"
         PREV_BUILD = "${BUILD_NUMBER.toInteger() - 1}"

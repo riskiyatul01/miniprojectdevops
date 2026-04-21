@@ -22,8 +22,7 @@ jenkins:
 
   # CSRF Protection — mencegah Cross-Site Request Forgery
   crumbIssuer:
-    standard:
-      excludeClientIPFromCrumb: false
+    standard: {}
 
   securityRealm:
     local:
@@ -56,6 +55,13 @@ unclassified:
     useSsl: false
     useTls: true
     charset: "UTF-8"
+    authentication:
+      username: "{{ vault_smtp_username }}"
+      password: "{{ vault_smtp_password }}"
+  
+  gitSCM:
+    globalConfigEmail: "fiorenzanalle05@gmail.com"
+    globalConfigName: "fioreenza"
 
 # =====================================================
 # Tool Configuration
@@ -103,43 +109,18 @@ credentials:
                 directEntry:
                   privateKey: "${TARGET_SSH_KEY}"
 
-# =====================================================
-# Job DSL — Pipeline Job Definition
-# Mendefinisikan CI/CD pipeline secara otomatis
-# =====================================================
 jobs:
   - script: |
       pipelineJob('{{ jenkins_job_name }}') {
-          description('CI/CD Pipeline - Miniproject DevOps Kelompok 3')
-
-          definition {
-              cpsScm {
-                  scm {
-                      git {
-                          remote {
-                              url('{{ github_repo_url }}')
-                          }
-                          branches('{{ jenkins_job_branch }}')
-                      }
-                  }
-                  scriptPath('Jenkinsfile')
-                  lightweight(true)
-              }
+        definition {
+          cpsScm {
+            scm {
+              git('{{ github_repo_url }}.git', 'main')
+            }
+            scriptPath('Jenkinsfile')
           }
-
-          // Trigger: Poll SCM setiap 5 menit
-          triggers {
-              scm('H/5 * * * *')
-          }
-
-          properties {
-              buildDiscarder {
-                  strategy {
-                      logRotator {
-                          numToKeepStr('10')
-                          daysToKeepStr('30')
-                      }
-                  }
-              }
-          }
+        }
+        triggers {
+          scm('* * * * *')
+        }
       }

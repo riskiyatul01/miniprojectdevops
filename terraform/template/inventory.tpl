@@ -3,12 +3,12 @@ all:
     jenkins:
       hosts:
         jenkins-node:
-          ansible_host: 70.153.147.203
+          ansible_host: ${jenkins_ip}
           ansible_user: ubuntu
           ansible_ssh_private_key_file: ~/.ssh/id_rsa
     target:
       hosts:
         target-node:
-          ansible_host: 70.153.151.129
+          ansible_host: ${target_ip}
           ansible_user: ubuntu
           ansible_ssh_private_key_file: ~/.ssh/id_rsa

@@ -1,6 +1,11 @@
-output "resource_group_name" {
-  value       = azurerm_resource_group.rg.name
+output "resource_group_name" { 
+  value = var.resource_group_name 
   description = "Nama Resource Group"
+}
+
+output "location" { 
+  value = var.location 
+  description = "Lokasi Resource Group"
 }
 
 output "jenkins_subnet_id" {

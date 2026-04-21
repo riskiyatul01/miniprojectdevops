@@ -43,83 +43,60 @@
   no_log: true
   changed_when: false
 
-- name: Pull image terbaru dari registry
-  ansible.builtin.command: >
-    docker pull {{ dockerhub_image }}:{{ image_tag | default('latest') }}
-  register: pull_result
-
-- name: Tampilkan hasil pull
-  ansible.builtin.debug:
-    msg: "{{ pull_result.stdout }}"
-
-- name: Deploy aplikasi menggunakan Docker Compose
-  ansible.builtin.shell: |
-    cd {{ deploy_dir }}
-    export IMAGE_TAG={{ image_tag | default('latest') }}
-    docker compose down --remove-orphans || true
-    docker compose up -d
-  environment:
-    IMAGE_TAG: "{{ image_tag | default('latest') }}"
-  notify: Cleanup dangling Docker images
-
-# --- Smoke Test Pasca-Deployment ---
-- name: Tunggu aplikasi siap (smoke test)
-  ansible.builtin.uri:
-    url: "{{ healthcheck_url }}"
-    status_code: 200
-    timeout: 5
-  register: healthcheck
-  until: healthcheck.status == 200
-  retries: "{{ healthcheck_retries }}"
-  delay: "{{ healthcheck_delay }}"
-  ignore_errors: yes
-
-- name: Tampilkan status deployment
-  ansible.builtin.debug:
-    msg: >-
-      {% if healthcheck.status is defined and healthcheck.status == 200 %}
-      ✅ Deployment BERHASIL! Aplikasi berjalan di http://{{ ansible_host }}:{{ app_host_port }}
-      {% else %}
-      ❌ Deployment GAGAL! Smoke test tidak berhasil. Memulai rollback...
-      {% endif %}
-
-# --- Rollback Otomatis Jika Gagal ---
-- name: Rollback ke versi sebelumnya jika smoke test gagal
+# Proses deploy & test dengan block-rescue untuk rollback otomatis jika gagal
+- name: Proses Deployment dan Verifikasi
   block:
+    - name: Pull image terbaru
+      ansible.builtin.command: >
+        docker pull {{ dockerhub_image }}:{{ image_tag | default('latest') }}
+
+    - name: Deploy aplikasi menggunakan Docker Compose
+      ansible.builtin.shell: |
+        cd {{ deploy_dir }}
+        export IMAGE_TAG={{ image_tag | default('latest') }}
+        docker compose down --remove-orphans || true
+        docker compose up -d
+      environment:
+        IMAGE_TAG: "{{ image_tag | default('latest') }}"
+
+    - name: Smoke Test (Tunggu aplikasi siap)
+      ansible.builtin.uri:
+        url: "{{ healthcheck_url }}"
+        status_code: 200
+        timeout: 5
+      register: healthcheck
+      until: healthcheck.status == 200
+      retries: "{{ healthcheck_retries }}"
+      delay: "{{ healthcheck_delay }}"
+
+  rescue:
+    # Hanya jalan kalau deploy atau smoke test di atas GAGAL
+    - name: ⚠️ Smoke test gagal! Memulai rollback ke versi sebelumnya...
+      ansible.builtin.debug:
+        msg: "Deployment gagal. Mengembalikan ke image yang tersimpan di .previous_image"
+
     - name: Baca image versi sebelumnya
       ansible.builtin.slurp:
         src: "{{ deploy_dir }}/.previous_image"
       register: previous_image_file
-
-    - name: Set previous image variable
-      ansible.builtin.set_fact:
-        rollback_image: "{{ previous_image_file.content | b64decode | trim }}"
+      ignore_errors: yes
 
     - name: Rollback - Deploy ulang versi sebelumnya
       ansible.builtin.shell: |
         cd {{ deploy_dir }}
         docker compose down --remove-orphans || true
-        docker pull {{ rollback_image }}
-        export IMAGE_TAG={{ rollback_image.split(':')[-1] }}
+        # Mengambil tag dari file backup
+        export ROLLBACK_IMAGE={{ previous_image_file.content | b64decode | trim }}
+        docker pull $ROLLBACK_IMAGE
         docker compose up -d
-      environment:
-        IMAGE_TAG: "{{ rollback_image.split(':')[-1] }}"
-
-    - name: Rollback - Verifikasi health check
-      ansible.builtin.uri:
-        url: "{{ healthcheck_url }}"
-        status_code: 200
-        timeout: 5
-      register: rollback_health
-      until: rollback_health.status == 200
-      retries: 5
-      delay: 5
-
-    - name: Tampilkan status rollback
-      ansible.builtin.debug:
-        msg: "⚠️ ROLLBACK selesai ke image: {{ rollback_image }}"
+      when: previous_image_file.content is defined
 
     - name: Gagalkan playbook setelah rollback
       ansible.builtin.fail:
-        msg: "Deployment gagal dan rollback telah dilakukan ke {{ rollback_image }}"
-  when: healthcheck.status is not defined or healthcheck.status != 200
+        msg: "Deployment gagal dan rollback telah dilakukan."
+
+# Task ini tetap di luar agar selalu jalan (opsional)
+- name: Tampilkan status akhir
+  ansible.builtin.debug:
+    msg: "✅ Deployment BERHASIL di http://{{ ansible_host }}:{{ app_host_port }}"
+  when: healthcheck.status is defined and healthcheck.status == 200

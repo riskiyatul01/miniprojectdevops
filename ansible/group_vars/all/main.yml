@@ -17,7 +17,7 @@ dockerhub_username: "kelompok3devops"
 dockerhub_image: "{{ dockerhub_username }}/{{ app_name }}"
 
 # GitHub Repository
-github_repo_url: "https://github.com/kelompok3devops/miniprojectdevops.git"
+github_repo_url: "https://github.com/riskiyatul01/miniprojectdevops"
 
 # Timezone
 timezone: "Asia/Jakarta"

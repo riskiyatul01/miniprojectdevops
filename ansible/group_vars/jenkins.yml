@@ -33,24 +33,21 @@ jenkins_casc_dir: "/opt/jenkins_casc"
 
 # Jenkins Admin
 jenkins_admin_user: "kelompok3"
-jenkins_admin_password: "miniproject5"       # ⚠️ Production: pindahkan ke Vault
+jenkins_admin_password: "{{ vault_jenkins_admin_password }}"
 
 # Jenkins URL (berdasarkan IP publik)
-jenkins_url: "http://4.194.56.40:{{ jenkins_http_port }}"
+jenkins_url: "http://{{ ansible_host }}:{{ jenkins_http_port }}"
 
 # Number of Executors
 jenkins_num_executors: 2
 
 # Docker Hub Credentials untuk JCasC
 dockerhub_creds_id: "dockerhub-creds"
-dockerhub_password: "miniproject5"           # ⚠️ Production: pindahkan ke Vault
+dockerhub_password: "{{ vault_dockerhub_password }}"           # ⚠️ Production: pindahkan ke Vault
 
 # Pipeline Job
 jenkins_job_name: "miniproject-devops"
 jenkins_job_branch: "*/main"
-
-# Target Node IP (untuk deployment dari Jenkins)
-target_node_ip: "20.205.234.122"
 
 # Ansible di Jenkins (untuk deploy via Ansible)
 jenkins_ansible_inventory: "/var/jenkins_home/ansible/inventory/hosts.yml"

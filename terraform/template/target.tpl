@@ -16,4 +16,4 @@ healthcheck_retries: 5
 healthcheck_delay: 10
 
 # Inject dari Terraform
-target_node_ip: "70.153.151.129"
+target_node_ip: "${target_node_ip}"

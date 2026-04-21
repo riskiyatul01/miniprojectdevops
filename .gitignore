@@ -5,12 +5,14 @@ node_modules/
 **/.terraform/*
 *.tfstate
 *.tfstate.*
+terraform/*.tfvars
+terraform/*.tfvars.json
 *.tfplan
 crash.log
 
 # Ansible
 ansible/*.retry
-ansible/group_vars/vault.yml
+ansible/group_vars/all/vault.yml
 
 # OS
 .DS_Store
