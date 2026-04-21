@@ -91,13 +91,12 @@ credentials:
   system:
     domainCredentials:
       - credentials:
-          # Docker Hub Credentials
           - usernamePassword:
               scope: GLOBAL
               id: "{{ dockerhub_creds_id }}"
-              username: "{{ dockerhub_username }}"
-              password: "{{ dockerhub_password }}"
-              description: "Docker Hub credentials for push/pull images"
+              username: "{{ vault_dockerhub_username }}"
+              password: "{{ vault_dockerhub_pat }}"
+              description: "Docker Hub credentials for Jenkins pipelines"
 
           # SSH Credentials untuk Target Node Deployment
           - basicSSHUserPrivateKey:
