@@ -209,7 +209,8 @@ Role deploy pada Ansible dirancang dengan prinsip High Availability:
 
 - Auto-Rollback: Jika uri module mendeteksi status code selain 200 pada healthcheck, Ansible akan mengeksekusi blok rescue untuk mengembalikan ke image versi sebelumnya secara instan.
 
-#### Tahap 3: Containerization & CI/CD Pipeline (Docker + Jenkins)
+## Tahap 3: Containerization & CI/CD Pipeline (Docker + Jenkins)
+
 Tahap ini berfokus pada pengemasan aplikasi ke dalam Docker dan penyusunan alur kerja otomatis di Jenkins.
 
 ### 3.1 Multi-stage Docker Build
