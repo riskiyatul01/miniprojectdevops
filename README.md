@@ -199,10 +199,14 @@ lalu
 ansible-playbook playbook-setup-all.yml
 ```
 <img width="1149" height="940" alt="image" src="https://github.com/user-attachments/assets/e8361fba-e6fb-469c-bb2a-f0d53aec039c" />
+
 ### 2.3 Mekanisme Deployment & Rollback (Ansible Role)
 Role deploy pada Ansible dirancang dengan prinsip High Availability:
+
 - Backup: Sebelum update, Ansible mencatat image yang sedang berjalan ke file .previous_image.
+
 - Atomic: Menggunakan Docker Compose untuk memastikan transisi container yang lancar.
+
 - Auto-Rollback: Jika uri module mendeteksi status code selain 200 pada healthcheck, Ansible akan mengeksekusi blok rescue untuk mengembalikan ke image versi sebelumnya secara instan.
 
 #### Tahap 3: Containerization & CI/CD Pipeline (Docker + Jenkins)
@@ -217,14 +221,23 @@ Aplikasi dibangun menggunakan file Dockerfile dengan strategi Multi-stage build 
 Alih-alih konfigurasi manual, Jenkins dikonfigurasi menggunakan file ansible/roles/jenkins/templates/jenkins-casc.yml.j2. Untuk otomatisasi user admin, password, plugin, kredensial Docker Hub, hingga Job Pipeline dibuat secara otomatis saat Ansible dijalankan.
 
 <img width="1917" height="825" alt="image" src="https://github.com/user-attachments/assets/0e229df0-e9e7-4d37-ae40-888f70e77837" />
+
 ### 3.3 Struktur Jenkinsfile (The Pipeline)
+
 Pipeline didefinisikan dalam Jenkinsfile dengan alur sebagai berikut:
+
 1. Initial Setup: Mengambil commit ID pendek untuk tagging.
+
 2. Build: Membuat image Docker dengan 3 tag sekaligus (latest, build-number, commit-sha).
+
 3. Security Scan (DevSecOps): Menggunakan Docker Scout untuk memindai kerentanan (CVE). Pipeline akan FAIL jika ditemukan kerentanan level CRITICAL.
+
 4. Push: Mengunggah image yang aman ke Docker Hub.
+
 5. Deploy via Ansible: Jenkins memicu playbook-deploy.yml untuk memperbarui aplikasi di Target Node.
+
 6. Smoke Test: Melakukan pengujian HTTP ke endpoint /health milik Target Node.
+
 7. Rollback: Jika Smoke Test gagal, Jenkins memicu deployment ulang ke versi (build number) sebelumnya.
 
 
