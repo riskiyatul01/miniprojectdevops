@@ -10,9 +10,9 @@ app.get('/', (req, res) => {
     });
 });
 
-// Endpoint untuk Healthcheck (Sengaja dirusak untuk tes Rollback)
+// Endpoint untuk Healthcheck (Standard High Availability)
 app.get('/health', (req, res) => {
-    res.status(500).send('ERROR: Testing Rollback');
+    res.status(200).send('OK');
 });
 
 app.listen(PORT, "0.0.0.0", () => {
