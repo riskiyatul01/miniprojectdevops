@@ -76,7 +76,7 @@ pipeline {
                         // Syarat Tahap 1: Fail jika ada CRITICAL atau HIGH
                         if (scanOutput.contains("CRITICAL") || scanOutput.contains("HIGH")) {
                             echo "❌ SECURITY GATE FAILED: Ditemukan kerentanan tingkat CRITICAL atau HIGH!"
-                            //error("Build dihentikan demi keamanan karena ditemukan celah keamanan berbahaya.")
+                            error("Build dihentikan demi keamanan karena ditemukan celah keamanan berbahaya.")
                         } else {
                             echo "✅ SECURITY GATE PASSED: Tidak ada kerentanan berbahaya ditemukan."
                         }
