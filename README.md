@@ -229,23 +229,29 @@ Pipeline didefinisikan dalam Jenkinsfile dengan alur sebagai berikut:
 
 
 ## Hasil dan Analisis (Bukti Implementasi)
-1. Verifikasi Infrastruktur
+### 1. Verifikasi Infrastruktur
 Setelah Ansible selesai, verifikasi status semua node:
 ```
 ansible-playbook playbook-verify.yml
 ```
 <img width="1149" height="313" alt="image" src="https://github.com/user-attachments/assets/d8b4a330-443c-48d1-b365-1c1d2a7cb388" />
-Hasil: Docker dan Jenkins harus berstatus "Running" di masing-masing node.
+Hasilnya VM Target dan Jenkins harus berstatus "Running" di masing-masing node.
 
-2. Keamanan (DevSecOps)
+### 2. Keamanan (DevSecOps)
 <img width="1208" height="559" alt="image" src="https://github.com/user-attachments/assets/4d407986-4c69-432f-b48c-34f3490bc3f7" />
-<img width="1485" height="1042" alt="image" src="https://github.com/user-attachments/assets/11dde88d-6dee-4e89-bf32-06afd9b5a0f4" />
 Berdasarkan implementasi pada Jenkinsfile, pipeline melakukan pengawasan ketat:
 Jika Docker Scout menemukan CRITICAL vulnerability, pipeline akan berhenti (Aborted).
 Hal ini mencegah pengiriman kode rentan ke lingkungan produksi.
 
-4. Ketertelusuran (Traceability)
+### 3. CI/CD
+Implementasi CI/CD pada proyek ini mencakup seluruh siklus pengembangan hingga deployment aplikasi secara otomatis melalui Jenkins Pipeline.
+<img width="1485" height="1042" alt="image" src="https://github.com/user-attachments/assets/11dde88d-6dee-4e89-bf32-06afd9b5a0f4" />
+
+### 4. Ketertelusuran (Traceability)
 Setiap build menghasilkan artifact dan log yang jelas:
-- Image Tagging memudahkan audit jika terjadi error pada versi tertentu.
-- Endpoint /health pada app.js memberikan transparansi status aplikasi secara real-time.
-- Ansible Vault: Disarankan untuk mengenkripsi vault_dockerhub_password pada group_vars/all/main.yml di lingkungan produksi.
+- Build number (#1, #2, #3, dst), waktu build, status (SUCCESS / FAILED), trigger (commit dari GitHub)
+  <img width="1428" height="611" alt="image" src="https://github.com/user-attachments/assets/b79e1ad7-fd02-426c-a0d3-02177662bd3f" />
+  <img width="652" height="175" alt="image" src="https://github.com/user-attachments/assets/37668a7d-b4a1-4b5a-ae4a-fcf3c95440c0" />
+- Jika smoke test gagal, sistem secara otomatis melakukan rollback ke versi sebelumnya yang stabil menggunakan image Docker terakhir yang berhasil berjalan, sehingga menjaga ketersediaan aplikasi di production.
+  <img width="1919" height="918" alt="image" src="https://github.com/user-attachments/assets/151b1f0c-052f-4a80-927b-20446a4d8273" />
+
