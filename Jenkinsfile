@@ -14,6 +14,9 @@ pipeline {
         ANSIBLE_DIR = "/var/jenkins_home/ansible"
         ANSIBLE_CONFIG = "${ANSIBLE_DIR}/ansible.cfg"
         
+        // --- Notifications ---
+        EMAIL_TO = "aryasatyagigachad9@gmail.com"
+        
         // --- Dynamic IPs ---
         TARGET_NODE_IP = "65.52.160.192"
         SHORT_COMMIT = ""
