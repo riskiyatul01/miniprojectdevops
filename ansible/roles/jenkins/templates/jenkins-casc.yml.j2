@@ -52,16 +52,28 @@ unclassified:
     globalConfigEmail: "{{ git_email }}"
     globalConfigName: "{{ git_name }}"
 
-  # Konfigurasi Email Notification Standar
+  # Konfigurasi Email Notification Standar (Mailer)
   mailer:
     smtpHost: "smtp.gmail.com"
     smtpPort: "587"
     useSsl: false
     useTls: true
-    charset: "UTF-8"
+    replyToAddress: "{{ vault_smtp_username }}"
     authentication:
       username: "{{ vault_smtp_username }}"
       password: "{{ vault_smtp_password }}"
+
+  # Konfigurasi Extended Email (untuk perintah 'emailext' di Jenkinsfile)
+  extendedEmailPublisher:
+    smtpHost: "smtp.gmail.com"
+    smtpPort: "587"
+    useSsl: false
+    useTls: true
+    smtpUsername: "{{ vault_smtp_username }}"
+    smtpPassword: "{{ vault_smtp_password }}"
+    adminRequiredForTemplateTesting: false
+    defaultContentType: "text/html"
+    charset: "UTF-8"
 
 # =====================================================
 # Tool Configuration
