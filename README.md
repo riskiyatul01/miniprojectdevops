@@ -38,6 +38,7 @@ Sebuah tim pengembangan kerap menghadapi penundaan dan inkonsistensi dalam meril
                                │  └──────────────┘│
                                └──────────────────┘
 ```
+Arsitektur ini menggambarkan alur CI/CD terotomatisasi mulai dari developer yang melakukan push kode ke GitHub repository, yang kemudian memicu Jenkins Node melalui webhook atau polling untuk menjalankan pipeline CI/CD. Jenkins melakukan proses build aplikasi, membuat Docker image, kemudian menjalankan security scanning sebelum image dipush ke Docker Hub sebagai container registry. Setelah image tersedia, Jenkins memanggil Ansible untuk melakukan deployment ke Target Node, di mana Docker Engine dan Docker Compose digunakan untuk menarik (pull) image terbaru dari Docker Hub dan menjalankan aplikasi dalam container. Dengan alur ini, seluruh proses mulai dari commit hingga deployment berjalan otomatis, terstandarisasi, dan minim intervensi manual.
 
 | Komponen | Fungsi |
 |---|---|
@@ -143,33 +144,40 @@ resource_group_name = "ets-devops-03"
 ```
 
 #### Provisioning Infrastruktur
+Masuk ke folder terraform
 
+```
 cd terraform
+```
 
-# Inisialisasi Terraform (download provider Azure)
 <img width="948" height="523" alt="image" src="https://github.com/user-attachments/assets/a9a8e940-6aa7-4ece-b55e-662727e3eb40" />
+Inisialisasi Terraform (download provider Azure)
+
 ```
 terraform init
 ```
 
-# Preview perubahan yang akan dibuat
 <img width="1118" height="973" alt="image" src="https://github.com/user-attachments/assets/a4091a2c-23df-4846-a2b3-333f8603c38a" />
+Preview perubahan yang akan dibuat
+
 ```
 terraform plan
 ```
 
-# Buat infrastruktur (ketik 'yes' untuk konfirmasi)
 <img width="1012" height="807" alt="image" src="https://github.com/user-attachments/assets/4da7a6ed-ccce-402f-a5ab-ce3497f7c8f8" />
+Buat infrastruktur (ketik 'yes' untuk konfirmasi)
+
 ```
 terraform apply
 ```
 
-#### 1.5 Catat Output IP
 <img width="781" height="239" alt="image" src="https://github.com/user-attachments/assets/4b54a40d-0a95-44c2-b111-1ef3339f0b34" />
-Setelah `terraform apply` selesai, catat output IP menggunakan
-```bash
+
+Setelah terraform apply selesai, catat output IP menggunakan 
+```
 terraform output
 ```
+
 Output ini akan digunakan oleh ansible dalam template inventory/hosts.yml dan group_vars/target.yml sebagai variable IP yang dibuat secara otomatis setelah terraform apply.
 
 ### Tahap 2: Configuration as Code (Ansible)
