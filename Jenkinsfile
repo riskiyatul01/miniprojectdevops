@@ -29,6 +29,8 @@ pipeline {
                 script {
                     env.SHORT_COMMIT = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()      
                     echo "✅ IP Target Siap: ${env.TARGET_NODE_IP}"
+                    currentBuild.displayName = "#${env.BUILD_NUMBER} - ${env.SHORT_COMMIT}"
+                    currentBuild.description = "Commit: <a href='https://github.com/riskiyatul01/miniprojectdevops/commit/${env.SHORT_COMMIT}'>${env.SHORT_COMMIT}</a>"
                 }
             }
         }

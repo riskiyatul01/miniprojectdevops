@@ -10,11 +10,15 @@ services:
     image: {{ dockerhub_image }}:${IMAGE_TAG:-latest}
     container_name: {{ app_name }}
     restart: unless-stopped
+    labels:
+      - "com.kelompok3.app={{ app_name }}"
+      - "com.kelompok3.version=${IMAGE_TAG:-latest}"
     ports:
       - "{{ app_host_port }}:{{ app_container_port }}"
     environment:
       - NODE_ENV=production
       - PORT={{ app_container_port }}
+      - BUILD_VERSION=${IMAGE_TAG:-latest}
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:{{ app_container_port }}/health"]
       interval: 30s
@@ -26,3 +30,4 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+        tag: "{{ app_name }}-{{ '{{.ID}}' }}"
