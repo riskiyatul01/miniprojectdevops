@@ -94,7 +94,8 @@ pipeline {
                     passwordVariable: 'DH_PASS'
                 )]) {
                     sh """
-                        echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+                        set +x
+                        printf "%s" "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
                         docker push ${DOCKER_IMAGE}:latest
                         docker push ${DOCKER_IMAGE}:build-${env.BUILD_NUMBER}
                     """
