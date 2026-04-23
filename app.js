@@ -14,7 +14,7 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: "Healthy",
-        message: "Testing build di branch baru 2",
+        message: "ini aku build dari branch",
         uptime: process.uptime(),
         timestamp: new Date().toISOString()
     });
