@@ -270,6 +270,9 @@ Setiap build menghasilkan artifact dan log yang jelas:
 - Jika smoke test gagal, sistem secara otomatis melakukan rollback ke versi sebelumnya yang stabil menggunakan image Docker terakhir yang berhasil berjalan, sehingga menjaga ketersediaan aplikasi di production.
   <img width="1919" height="918" alt="image" src="https://github.com/user-attachments/assets/151b1f0c-052f-4a80-927b-20446a4d8273" />
 - Terintegrasi dengan email notification (Jenkins Email Extension Plugin) yang mengirimkan notifikasi status build (SUCCESS / FAILED) ke tim secara otomatis sebagai bagian dari observability pipeline.
+<img width="2214" height="719" alt="image" src="https://github.com/user-attachments/assets/ca5a8743-1428-48a2-9e88-cc9d16c2e939" />
+<img width="2233" height="667" alt="image" src="https://github.com/user-attachments/assets/f5d4bf47-ae54-4390-8ced-f9f3341100ba" />
+
 
 ### 5. IP Address
 - http://65.52.160.212:8080 untuk Jenkins 
