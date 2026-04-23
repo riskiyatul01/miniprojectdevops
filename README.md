@@ -263,9 +263,14 @@ Implementasi CI/CD pada proyek ini mencakup seluruh siklus pengembangan hingga d
 
 ### 4. Ketertelusuran (Traceability)
 Setiap build menghasilkan artifact dan log yang jelas:
-- Build number (#1, #2, #3, dst), waktu build, status (SUCCESS / FAILED), trigger (commit dari GitHub)
+- Build number (#1, #2, #3, dst), waktu build, status (SUCCESS / FAILED), serta trigger dari commit GitHub (push event pada semua branch melalui webhook).
   <img width="1428" height="611" alt="image" src="https://github.com/user-attachments/assets/b79e1ad7-fd02-426c-a0d3-02177662bd3f" />
   <img width="652" height="175" alt="image" src="https://github.com/user-attachments/assets/37668a7d-b4a1-4b5a-ae4a-fcf3c95440c0" />
+- Pipeline menggunakan GitHub Webhook + Multibranch Pipeline, sehingga setiap push pada semua branch (main, dev, feature/*, dll) secara otomatis memicu proses build tanpa polling.
 - Jika smoke test gagal, sistem secara otomatis melakukan rollback ke versi sebelumnya yang stabil menggunakan image Docker terakhir yang berhasil berjalan, sehingga menjaga ketersediaan aplikasi di production.
   <img width="1919" height="918" alt="image" src="https://github.com/user-attachments/assets/151b1f0c-052f-4a80-927b-20446a4d8273" />
+- Terintegrasi dengan email notification (Jenkins Email Extension Plugin) yang mengirimkan notifikasi status build (SUCCESS / FAILED) ke tim secara otomatis sebagai bagian dari observability pipeline.
 
+### 5. IP Address
+- http://65.52.160.212:8080 untuk Jenkins 
+- http://65.52.160.192:3000/health untuk Target Deployment
