@@ -61,9 +61,8 @@ pipeline {
                 )]) {
                     script {
                         // Pastikan menggunakan DH_USER (hasil dari withCredentials) bukan DOCKERHUB_USER hardcoded
-                        echo "Logging in to Docker Hub for Scout as ${env.DH_USER}..."
+                        echo "Logging in to Docker Hub..."
                         sh """
-                            echo "${env.DH_PAT}" | docker login -u "${env.DH_USER}" --password-stdin
                             docker run --rm \
                               -v /var/run/docker.sock:/var/run/docker.sock \
                               -e DOCKER_SCOUT_HUB_USER="${env.DH_USER}" \

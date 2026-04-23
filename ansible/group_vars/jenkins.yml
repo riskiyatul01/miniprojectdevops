@@ -2,26 +2,6 @@
 # ============================================
 # Variabel Khusus Jenkins Node
 # ============================================
-#
-# ⚠️  CATATAN KEAMANAN (Ansible Vault):
-# ──────────────────────────────────────
-# Pada environment PRODUCTION, variabel sensitif seperti
-# password dan credential HARUS dienkripsi menggunakan
-# Ansible Vault agar tidak tersimpan plaintext di repository.
-#
-# Langkah penggunaan Vault:
-#   1. Buat file vault: ansible-vault create group_vars/vault.yml
-#   2. Pindahkan variabel sensitif ke vault.yml:
-#        vault_jenkins_admin_password: "password_rahasia"
-#        vault_dockerhub_password: "token_rahasia"
-#   3. Referensikan di file ini:
-#        jenkins_admin_password: "{{ vault_jenkins_admin_password }}"
-#        dockerhub_password: "{{ vault_dockerhub_password }}"
-#   4. Jalankan playbook: ansible-playbook --ask-vault-pass playbook-setup-all.yml
-#
-# Untuk environment LAB/akademis ini, credentials disimpan
-# plaintext untuk kemudahan demonstrasi.
-# ============================================
 
 # Jenkins Container
 jenkins_container_name: "jenkins"
