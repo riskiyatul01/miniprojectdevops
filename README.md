@@ -19,7 +19,7 @@ Sebuah tim pengembangan kerap menghadapi penundaan dan inkonsistensi dalam meril
                                        ▼
                                ┌──────────────────┐      push image     ┌──────────────────┐
                                │  Jenkins Node    │ ──────────────────> │  Docker Hub      │
-                               │  4.194.56.40     │                     │  (Registry)      │
+                               │  65.52.160.212   │                     │  (Registry)      │
                                │  ┌──────────────┐│                     └──────────────────┘
                                │  │Jenkins (JCasC)││                              │
                                │  │Docker Engine  ││                              │
@@ -30,7 +30,7 @@ Sebuah tim pengembangan kerap menghadapi penundaan dan inkonsistensi dalam meril
                                        ▼                                         │ pull image
                                ┌──────────────────┐                              │
                                │  Target Node     │ <────────────────────────────┘
-                               │  20.205.234.122  │
+                               │  65.52.160.192   │
                                │  ┌──────────────┐│
                                │  │Docker Engine  ││
                                │  │Docker Compose ││
