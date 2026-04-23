@@ -39,6 +39,11 @@
 # ============================================
 # 3. COPY JCASc
 # ============================================
+- name: Delete existing JCasC configuration
+  ansible.builtin.file:
+    path: "{{ jenkins_casc_dir }}/jenkins-casc.yml"
+    state: absent
+
 - name: Copy JCasC configuration
   ansible.builtin.template:
     src: jenkins-casc.yml.j2
@@ -82,9 +87,9 @@
     -v {{ jenkins_home }}:/var/jenkins_home
     -v /var/run/docker.sock:/var/run/docker.sock
     -v {{ jenkins_casc_dir }}:/var/jenkins_casc:ro
-    -e CASC_JENKINS_CONFIG=/var/jenkins_casc/jenkins-casc.yml
-    -e TARGET_SSH_KEY="$(cat ~/.ssh/id_rsa)"
+    -v /home/ubuntu/.ssh/id_rsa:/var/jenkins_home/.ssh/id_rsa:ro
     -e JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+    -e CASC_JENKINS_CONFIG=/var/jenkins_casc/jenkins-casc.yml
     custom-jenkins:latest
 
 # ============================================

@@ -12,7 +12,11 @@ app.get('/', (req, res) => {
 
 // Endpoint untuk Healthcheck (Standard High Availability)
 app.get('/health', (req, res) => {
-    res.status(500).send('Error: Health check failed');
+    res.status(200).json({
+        status: "Healthy",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
 });
 
 app.listen(PORT, "0.0.0.0", () => {

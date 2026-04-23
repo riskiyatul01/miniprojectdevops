@@ -51,29 +51,15 @@ unclassified:
   scmGit:
     globalConfigEmail: "{{ git_email }}"
     globalConfigName: "{{ git_name }}"
-
-  # Konfigurasi Email Notification Standar (Mailer)
-  mailer:
-    smtpHost: "smtp.gmail.com"
-    smtpPort: "587"
-    useSsl: false
-    useTls: true
-    replyToAddress: "{{ vault_smtp_username }}"
-    authentication:
-      username: "{{ vault_smtp_username }}"
-      password: "{{ vault_smtp_password }}"
-
-  # Konfigurasi Extended Email (untuk perintah 'emailext' di Jenkinsfile)
-  extendedEmailPublisher:
-    smtpHost: "smtp.gmail.com"
-    smtpPort: "587"
-    useSsl: false
-    useTls: true
-    smtpUsername: "{{ vault_smtp_username }}"
-    smtpPassword: "{{ vault_smtp_password }}"
-    adminRequiredForTemplateTesting: false
+  
+  email-ext:
     defaultContentType: "text/html"
     charset: "UTF-8"
+    mailAccount:
+      smtpHost: "smtp.gmail.com"
+      smtpPort: 465
+      credentialsId: "smtp-credentials-id"
+      useSsl: true
 
 # =====================================================
 # Tool Configuration
@@ -109,8 +95,14 @@ credentials:
               username: "{{ vault_dockerhub_username }}"
               password: "{{ vault_dockerhub_pat }}"
               description: "Docker Hub credentials for Jenkins pipelines"
+          
+          - usernamePassword:
+              scope: GLOBAL
+              id: "smtp-credentials-id" 
+              username: "{{ vault_smtp_username }}"
+              password: "{{ vault_smtp_password }}"
+              description: "SMTP credentials for email-ext"
 
-          # SSH Credentials untuk Target Node Deployment
           - basicSSHUserPrivateKey:
               scope: GLOBAL
               id: "target-node-ssh"
@@ -118,7 +110,8 @@ credentials:
               description: "SSH key untuk deploy ke Target Node"
               privateKeySource:
                 directEntry:
-                  privateKey: "${TARGET_SSH_KEY}"
+                  privateKey: |
+                    {{ TARGET_SSH_KEY | indent(20) }}
 
 jobs:
   - script: |
@@ -130,7 +123,7 @@ jobs:
                 remote {
                   url('https://github.com/riskiyatul01/miniprojectdevops.git')
                 }
-                branches('*/main')
+                branches('*/**')
                 extensions { } 
               }
             }
@@ -138,6 +131,6 @@ jobs:
           }
         }
         triggers {
-          scm('* * * * *')
+          githubPush()
         }
       }
